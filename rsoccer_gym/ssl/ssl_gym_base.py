@@ -102,8 +102,7 @@ class SSLBaseEnv(gym.Env):
             from rsoccer_gym.Render import RCGymRender
             self.view = RCGymRender(self.n_robots_blue,
                                  self.n_robots_yellow,
-                                 self.field,
-                                 simulator='ssl')
+                                 self.field)
 
         return self.view.render_frame(self.frame, return_rgb_array=mode == "rgb_array")
 
