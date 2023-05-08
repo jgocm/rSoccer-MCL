@@ -126,10 +126,16 @@ class ParticleFilter:
 
         self.failure = False
 
-    def initialize_particles_from_seed_position(self, seed_x, seed_y, max_distance):
+    def initialize_particles_from_seed_position(self, position_x, position_y, max_distance):
         """
         Initialize the particles uniformly around a seed position (x, y, orientation). 
         """
+
+        radius = np.random.uniform(0, max_distance)
+        direction = np.random.uniform(0, 360)
+        seed_x = position_x + radius*math.cos(direction)
+        seed_y = position_y + radius*math.sin(direction)
+
         particles = []
         weight = 1.0/self.n_particles
         for i in range(self.n_particles):
@@ -140,7 +146,7 @@ class ParticleFilter:
             y = seed_y + radius*math.sin(direction)
             particle = Particle(initial_state=[x, y, orientation], 
                                 weight=weight, 
-                                movement_deviation = self.process_noise)
+                                movement_deviation=self.process_noise)
             particles.append(particle)
         
         self.particles = particles
