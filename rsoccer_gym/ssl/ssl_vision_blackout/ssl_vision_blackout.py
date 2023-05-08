@@ -1,12 +1,8 @@
-import random
 import gym
 import numpy as np
 import time
 from rsoccer_gym.Entities import Frame, Robot, Ball
 from rsoccer_gym.ssl.ssl_gym_base import SSLBaseEnv
-from rsoccer_gym.Utils import KDTree
-from rsoccer_gym.Perception.ParticleVision import Camera, ParticleVision
-from rsoccer_gym.Perception.Odometry import Odometry
 from rsoccer_gym.Tracking.ParticleFilterBase import Particle
 from rsoccer_gym.Perception.jetson_vision import JetsonVision
 
