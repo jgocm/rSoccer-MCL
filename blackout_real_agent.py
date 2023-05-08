@@ -31,7 +31,6 @@ def parse_particle_filter_data(measurements, global_movement, robot_w, data):
 if __name__ == "__main__":
     import os
     from rsoccer_gym.Utils.load_localization_data import Read
-    import time
     cwd = os.getcwd()
 
     n_particles = 100
@@ -44,7 +43,6 @@ if __name__ == "__main__":
     path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
     path_to_log = path+'/logs/processed.csv'
     data = Read(path_to_log, is_raw=False)
-    time_step_ms =  data.get_timesteps_average()
     time_steps = data.get_timesteps()
     frames = data.get_frames()
     has_goals = data.get_has_goals(remove_false_positives=True)
@@ -56,7 +54,6 @@ if __name__ == "__main__":
     # SET INITIAL ROBOT POSITION AND SEED
     initial_position = position[0]
     seed_radius = 1
-    seed_x, seed_y, seed_theta = initial_position
     initial_position[2] = np.degrees(initial_position[2])
 
     # Using VSS Single Agent env
@@ -64,7 +61,7 @@ if __name__ == "__main__":
                    vertical_lines_nr = vertical_lines_nr, 
                    n_particles = n_particles,
                    initial_position = initial_position,
-                   time_step=time_step_ms)
+                   time_step=data.get_timesteps_average())
     env.reset()
 
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
@@ -73,7 +70,7 @@ if __name__ == "__main__":
                                    measurement_noise=[1, 1],
                                    vertical_lines_nr=vertical_lines_nr,
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC)
-    robot_tracker.initialize_particles_from_seed_position(seed_x, seed_y, seed_radius)
+    robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
 
     # movements list
     odometry = data.get_odometry()
