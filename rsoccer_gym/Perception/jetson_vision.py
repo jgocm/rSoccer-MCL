@@ -175,7 +175,7 @@ class JetsonVision():
         boundary_ground_points = self.trackGroundPoints(src, boundary_points)
         
         # not using field lines detection
-        #line_ground_points = self.trackGroundPoints(src, line_points)
+        # line_ground_points = self.trackGroundPoints(src, line_points)
         line_ground_points = []
         
         return boundary_ground_points, line_ground_points

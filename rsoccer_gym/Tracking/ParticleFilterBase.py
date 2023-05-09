@@ -1,4 +1,3 @@
-from cmath import cos
 import numpy as np
 import math
 from rsoccer_gym.Perception.ParticleVision import ParticleVision
@@ -117,13 +116,18 @@ class ParticleFilter:
 
         # Set noise
         self.process_noise = process_noise
-        self.measurement_noise = measurement_noise
+        self.measurement_noise = measurement_noise # not used
 
         # Resampling
         self.resampling_algorithm = resampling_algorithm
         self.resampler = Resampler()
-        self.displacement = [0, 0, 0]
+        self.displacement = np.array([0, 0, 0])
 
+        # Trackings
+        self.self_localization = np.array([0, 0, 0])
+        self.odometry = np.array([0,0,0])
+
+        # Detect algorithm failures -> reset
         self.failure = False
 
     def initialize_particles_from_seed_position(self, position_x, position_y, max_distance):
@@ -172,39 +176,6 @@ class ParticleFilter:
             particles.append(particle)
         
         self.particles = particles
-
-    def initialize_particles_gaussian(self, mean_vector, standard_deviation_vector):
-        """
-        Initialize particle filter using a Gaussian distribution with dimension three: x, y, orientation. 
-        Only standard deviations can be provided hence the covariances are all assumed zero.
-
-        :param mean_vector: Mean of the Gaussian distribution used for initializing the particle states
-        :param standard_deviation_vector: Standard deviations (one for each dimension)
-        :return: Boolean indicating success
-        """
-
-        # Check input dimensions
-        if len(mean_vector) != self.state_dimension or len(standard_deviation_vector) != self.state_dimension:
-            print("Means and state deviation vectors have incorrect length in initialize_particles_gaussian()")
-            return False
-
-        # Initialize particles with uniform weight distribution
-        self.particles = []
-        weight = 1.0 / self.n_particles
-        for i in range(self.n_particles):
-            initial_state = np.random.normal(mean_vector, standard_deviation_vector, self.state_dimension).tolist()
-            particle = Particle(initial_state=initial_state, 
-                                weight=weight,
-                                movement_deviation = self.process_noise)
-            while particle.is_out_of_field(x_min=self.x_min, x_max=self.x_max, y_min=self.y_min, y_max=self.y_max):
-                # Get state sample
-                initial_state = np.random.normal(mean_vector, standard_deviation_vector, self.state_dimension).tolist()
-                particle = Particle(initial_state=initial_state, 
-                                    weight=weight,
-                                    movement_deviation = self.process_noise)
-
-            # Add particle i
-            self.particles.append(particle)
 
     def set_field_limits(self, field = Field()):
         self.field = field
@@ -275,14 +246,14 @@ class ParticleFilter:
 
         :param movement: [forward motion, side motion and rotation] in meters and degrees
         """
-        self.displacement = [sum(x) for x in zip(self.displacement, movement)]
+        self.displacement = self.displacement + movement
         
         # Move particles
         for particle in self.particles:
             particle.move(movement)
 
+            # Remove Particles Out of Field Boundaries
             if particle.is_out_of_field(x_min=self.x_min, x_max=self.x_max, y_min=self.y_min, y_max=self.y_max):
-                # print("Particle Out of Field Boundaries")
                 particle.weight = 0
 
     def compute_observation(self, particle):
@@ -300,6 +271,10 @@ class ParticleFilter:
         return goal, boundary_points
 
     def compute_boundary_points_similarity(self, sigma=5, robot_observations=[], particle_observations=[]):
+        # returns 1 if there are no robot observations
+        if len(robot_observations)<1:
+            return 1
+        
         # initial value
         likelihood_sample = 1
 
@@ -366,13 +341,10 @@ class ParticleFilter:
         """
         # parse particle filter observations
         robot_goal, robot_boundary_points, robot_field_points = observations
-        #import pdb;pdb.set_trace()
 
         # Check if particle is out of field boundaries
         if particle.is_out_of_field(x_min=self.x_min, x_max=self.x_max, y_min=self.y_min, y_max=self.y_max):
             return 0
-        elif len(robot_boundary_points)<1:
-            return 1
         else:
             # Initialize measurement likelihood
             likelihood_sample = 1.0
@@ -439,6 +411,9 @@ class ParticleFilter:
         :param landmarks: Landmark positions.
         """
 
+        # Propagate the particles state according to the current movements
+        self.propagate_particles(movement)
+
         weights = []
         if len(observations[1])>0:
             self.vision.set_detection_angles_from_list([observations[1][0][1]])
@@ -471,9 +446,6 @@ class ParticleFilter:
                 if weights[i]<1e-13:
                     self.n_active_particles = self.n_active_particles-1
                 self.particles[i].weight = weights[i]
-    
-        # Propagate the particles state according to the current movements
-        self.propagate_particles(movement)
 
 if __name__=="__main__":
     from rsoccer_gym.ssl.ssl_gym_base import SSLBaseEnv

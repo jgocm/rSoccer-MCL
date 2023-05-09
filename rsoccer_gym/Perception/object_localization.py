@@ -679,7 +679,7 @@ class Camera():
         '''
         distance = np.sqrt(x**2 + y**2)
         theta = np.rad2deg(np.arctan2(y, x))
-        return [distance, theta]
+        return np.array([distance, theta])
 
     def selfLocalizationFromGoalCorners(self, x1, y1, x2, y2):
         theta = math.atan((y2-y1)/(x1-x2))

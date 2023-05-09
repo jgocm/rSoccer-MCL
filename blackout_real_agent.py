@@ -5,30 +5,12 @@ from rsoccer_gym.Tracking.ParticleFilterBase import ParticleFilter, Particle
 from rsoccer_gym.Tracking import ResamplingAlgorithms
 from rsoccer_gym.Plotter.Plotter import RealTimePlotter
 from rsoccer_gym.Perception.jetson_vision import JetsonVision
-from rsoccer_gym.Perception.Odometry import Odometry
-
-def split_observation(measurements):
-    goal = measurements[:3]
-
-    field_points = measurements[3:]
-    vision_points = []
-    for i in range(0, len(field_points)):
-        if not (i%2):
-            x, y = field_points[i], field_points[i+1]
-            vision_points.append((x,y))
-    return goal, np.array(vision_points)
+from rsoccer_gym.Tracking.Odometry import Odometry
 
 def get_image_from_frame_nr(path_to_images_folder, frame_nr):
     dir = path_to_images_folder+f'/cam/{frame_nr}.png'
     img = cv2.imread(dir)
     return img
-
-def parse_particle_filter_data(measurements, global_movement, robot_w, data):
-    goal, field_points = split_observation(measurements)
-    dx, dy, dtheta = global_movement
-    dx, dy = data.rotate_to_local(dx, dy, robot_w)
-    movement = [dx, dy, dtheta]
-    return movement, goal, field_points
 
 if __name__ == "__main__":
     import os
@@ -38,13 +20,14 @@ if __name__ == "__main__":
     n_particles = 100
     vertical_lines_nr = 1
 
-    # LOAD REAL ODOMETRY DATA
     # CHOOSE SCENARIO
     scenario = 'sqr'
     lap = 2
+
+    # LOAD DATA
     path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
     path_to_log = path+'/logs/processed.csv'
-    data = Read(path_to_log, is_raw=False)
+    data = Read(path_to_log, is_raw=False, degrees=False)
     time_steps = data.get_timesteps()
     frames = data.get_frames()
     has_goals = data.get_has_goals(remove_false_positives=True)
@@ -52,6 +35,7 @@ if __name__ == "__main__":
 
     # LOAD POSITION DATA
     position = data.get_position()
+    odometry = data.get_odometry()
 
     # SET INITIAL ROBOT POSITION AND SEED
     initial_position = position[0]
@@ -61,7 +45,7 @@ if __name__ == "__main__":
     # Using VSS Single Agent env
     env = gym.make('SSLVisionBlackout-v0',
                    n_particles = n_particles,
-                   initial_position = initial_position,
+                   initial_position = [initial_position[0], initial_position[1], initial_position[2]],
                    time_step=data.get_timesteps_average())
     env.reset()
 
@@ -83,32 +67,25 @@ if __name__ == "__main__":
 
 
 
-    # Movements list
-    odometry = data.get_odometry()
-    odometry_movements = data.get_odometry_movement(degrees=True)
-    odometry_particle = Particle(initial_state=initial_position,
-                                 movement_deviation=[0, 0, 0])
     # Init Odometry
     robot_odometry = Odometry(initial_position=odometry[0])
+    odometry_particle = Particle(initial_state=initial_position,
+                                movement_deviation=[0, 0, 0])
     for frame_nr in data.frames:      
         # update odometry:
-        # pose_new <= pose_old + rotate_to_local(movement, pose_old)
         robot_odometry.update(odometry[env.steps])
         movement = robot_odometry.rad2deg(robot_odometry.movement)
 
         # capture frame:
-        # img, has_goal, goal <= frame
         img, has_goal, goal_bbox = get_image_from_frame_nr(path, frame_nr), has_goals[env.steps], goals[env.steps]
 
         # make observations:    
-        # observations <= jetson_vision.process(img, has_goal, goal)
         _, _, _, _, particle_filter_observations = jetson_vision.process_from_log(src = img,
                                                                                   timestamp = data.timestamps[env.steps],
                                                                                   has_goal = has_goal,
                                                                                   goal_bounding_box = goal_bbox)
 
         # compute particle filter tracking:    
-        # avg_mcl_state, odometry <= robot_tracker.update(motion, observations)
         robot_tracker.update(movement, particle_filter_observations)
         odometry_particle.move(movement)
 
@@ -118,5 +95,4 @@ if __name__ == "__main__":
                    robot_tracker.get_average_state(), 
                    odometry_particle.state, 
                    time_steps[env.steps])
-
         env.render()

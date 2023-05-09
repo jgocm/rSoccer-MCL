@@ -201,7 +201,6 @@ class ParticleVision:
             line_dir = ((line_dir + 180) % 360) - 180
             interception_x, interception_y = self.intercept_field_boundaries(x, y, line_dir, field)
             interception_x, interception_y = self.convert_to_local(interception_x, interception_y, x, y, w)
-            # intercepts.append([interception_x, interception_y])
             intercepts.append(self.convert_xy_to_polar(interception_x, interception_y))
 
         return intercepts
@@ -228,13 +227,12 @@ class ParticleVision:
         local_angle = self.limit_angle_degrees(np.rad2deg(np.arctan2(y, x)) - w)
         if np.abs(local_angle)>30: has_goal = 0
         else: has_goal = 1
-
         return has_goal, distance, local_angle
 
     def track_negative_goal_center(self, x, y, w, field):
         x, y = self.get_robot_to_negative_goal_vector(x, y, field)
         distance = np.sqrt(x**2 + y**2)
-        local_angle = np.rad2deg(np.arctan2(y, x)) - w
+        local_angle = self.limit_angle_degrees(np.rad2deg(np.arctan2(y, x)) - w)
         if np.abs(local_angle)>30: has_goal = 0
         else: has_goal = 1
 
@@ -250,22 +248,20 @@ class ParticleVision:
         return x, y
 
 if __name__ == "__main__":
-    from rsoccer_gym.ssl.ssl_gym_base import SSLBaseEnv
+    from rsoccer_gym.Perception.entities import Field
 
-    env = SSLBaseEnv(
-        field_type=1,
-        n_robots_blue=0,
-        n_robots_yellow=0,
-        time_step=0.025)
+    field = Field()
         
-    env.field.boundary_width = 0.3
-    env.field.x_max = env.field.length/2+env.field.boundary_width
-    env.field.x_min = -(env.field.length/2+env.field.boundary_width)
+    field.boundary_width = 0.3
+    field.x_max = 4.2
+    field.x_min = -0.3
+    field.y_max = 3
+    field.y_min = -3
 
-    robot_x, robot_y, robot_w = 1, 2, -23
+    robot_x, robot_y, robot_w = 0, 0, 15
 
-    vision = SSLEmbeddedVision(vertical_lines_nr=1)
+    vision = ParticleVision(vertical_lines_nr=1)
     
-    distance, angle = vision.track_positive_goal_center(robot_x, robot_y, robot_w, env.field)
-    print(distance, angle)
+    has_goal, distance, local_angle = vision.track_positive_goal_center(robot_x, robot_y, robot_w, field)
+    print(has_goal, distance, local_angle)
     # import pdb;pdb.set_trace()
