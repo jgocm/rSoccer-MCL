@@ -392,7 +392,7 @@ class ParticleFilter:
 
         distance = math.sqrt(self.displacement[0]**2 + self.displacement[1]**2)
         dtheta = self.displacement[2]
-        if distance>1:
+        if distance>1 or dtheta>90:
             return True
 
         for particle in self.particles:

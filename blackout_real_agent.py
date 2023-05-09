@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     # SET INITIAL ROBOT POSITION AND SEED
     initial_position = position[0]
-    seed_radius = 1
+    seed_radius = 2
     initial_position[2] = np.degrees(initial_position[2])
 
     # Using VSS Single Agent env
@@ -64,8 +64,6 @@ if __name__ == "__main__":
                                         enable_randomized_observations=True)
     jetson_vision.jetson_cam.setPoseFrom3DModel(170, 106.7, 0)
     #self.embedded_vision.jetson_cam.setPoseFrom3DModel(170, 107.2)
-
-
 
     # Init Odometry
     robot_odometry = Odometry(initial_position=odometry[0])
