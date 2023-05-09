@@ -152,7 +152,6 @@ class Read:
         timesteps = [0]
         timestamps = self.get_timestamps()
         for i in range(1,len(timestamps)):
-            # import pdb;pdb.set_trace()
             timestep = timestamps[i] - timestamps[i-1]
             timesteps.append(timestep)
         return np.array(timesteps)

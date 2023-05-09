@@ -179,7 +179,7 @@ class JetsonVision():
         line_ground_points = []
         
         return boundary_ground_points, line_ground_points
-    def checkGroundPointValidity(self, dist, theta ):
+    def checkGroundPointValidity(self, dist, theta):
         if dist>8 or abs(theta)>40: 
             print("invalid ground point")
             return False
@@ -196,7 +196,7 @@ class JetsonVision():
             x, y, w = self.jetson_cam.pixelToRobotCoordinates(pixel_x=pixel_x, pixel_y=pixel_y, z_world=0)
             dist, theta = self.jetson_cam.xyToPolarCoordinates(x, y)
             if self.checkGroundPointValidity(dist, theta):
-                ground_points.append([x, y, w])
+                ground_points.append([dist, theta])
 
         return ground_points 
 
@@ -273,7 +273,10 @@ class JetsonVision():
         self.trackObjects(detections)        
 
         # compute field points relative positions
-        particle_filter_observations = self.trackFieldPoints(src, boundary_points, line_points)
+        boundary_ground_points, line_ground_points = self.trackFieldPoints(src, boundary_points, line_points)
+        
+        # parse field detections for particle filter observations
+        particle_filter_observations = has_goal, boundary_ground_points, line_ground_points
 
         processed_vision = self.current_frame, self.tracked_ball, self.tracked_goal, self.tracked_robot, particle_filter_observations
 

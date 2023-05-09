@@ -329,7 +329,7 @@ class ParticleFilter:
 
     def compute_goal_similarity(self, sigma_distance=5, sigma_angle=10, robot_observation=[], particle_observation=[]):
         # Returns 1 if robot does not see the goal
-        if not robot_observation[0]: return 1
+        if not robot_observation: return 1
 
         # Returns 0 if particle's angle to goal is too high
         else: return particle_observation[0]
@@ -356,7 +356,7 @@ class ParticleFilter:
 
         return likelihood_sample
 
-    def compute_likelihood(self, robot_goal, robot_field_points, particle):
+    def compute_likelihood(self, observations, particle):
         """
         Compute likelihood p(z|sample) for a specific measurement given sample observations.
 
@@ -364,11 +364,15 @@ class ParticleFilter:
         :param observations: Detected wall relative positions from the sample vision
         :return Likelihood
         """
+        # parse particle filter observations
+        robot_goal, robot_boundary_points, robot_field_points = observations
+        #import pdb;pdb.set_trace()
+
         # Check if particle is out of field boundaries
         if particle.is_out_of_field(x_min=self.x_min, x_max=self.x_max, y_min=self.y_min, y_max=self.y_max):
             return 0
-        elif len(robot_field_points)<1:
-            return 1        
+        elif len(robot_boundary_points)<1:
+            return 1
         else:
             # Initialize measurement likelihood
             likelihood_sample = 1.0
@@ -377,7 +381,7 @@ class ParticleFilter:
             particle_goal, particle_boundary_points = self.compute_observation(particle)
             
             # Compute similarity from field boundary points
-            likelihood_sample *= self.compute_boundary_points_similarity(10, robot_field_points, particle_boundary_points)
+            likelihood_sample *= self.compute_boundary_points_similarity(10, robot_boundary_points, particle_boundary_points)
 
             # Compute similarity from goal center
             likelihood_sample *= self.compute_goal_similarity(0, 10, robot_goal, particle_goal)
@@ -397,14 +401,14 @@ class ParticleFilter:
 
         return Pxx      
 
-    def needs_resampling(self, robot_goal, robot_field_points):
+    def needs_resampling(self, observations):
         '''
         TODO: implement method for checking if resampling is needed
         '''
         
         # computes average for evaluating current state
         avg_particle = Particle(self.get_average_state(), 1)
-        weight = self.compute_likelihood(robot_goal, robot_field_points, avg_particle)
+        weight = self.compute_likelihood(observations, avg_particle)
         self.average_particle_weight = weight
         pxx = self.compute_covariance(avg_particle.state)
         #print(f'pxx: {pxx}')
@@ -425,7 +429,7 @@ class ParticleFilter:
 
         else: return False
 
-    def update(self, movement, goal, field_points):
+    def update(self, movement, observations):
         """
         Process a measurement given the measured robot displacement and resample if needed.
 
@@ -436,11 +440,11 @@ class ParticleFilter:
         """
 
         weights = []
-        if len(field_points)>0:
-            self.vision.set_detection_angles_from_list([field_points[0][1]])
+        if len(observations[1])>0:
+            self.vision.set_detection_angles_from_list([observations[1][0][1]])
         for particle in self.particles:
             # Compute current particle's weight based on likelihood
-            weight = particle.weight * self.compute_likelihood(goal, field_points, particle)
+            weight = particle.weight * self.compute_likelihood(observations, particle)
             # Store weight for normalization
             weights.append(weight)           
 
@@ -453,7 +457,7 @@ class ParticleFilter:
             self.particles[i].weight = weights[i]
 
         # Resample if needed
-        if self.needs_resampling(goal, field_points):
+        if self.needs_resampling(observations):
             self.displacement = [0, 0, 0]
             samples = self.resampler.resample(
                             self.particles_as_weigthed_samples(), 

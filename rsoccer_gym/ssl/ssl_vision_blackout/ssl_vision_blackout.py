@@ -4,8 +4,6 @@ import time
 from rsoccer_gym.Entities import Frame, Robot, Ball
 from rsoccer_gym.ssl.ssl_gym_base import SSLBaseEnv
 from rsoccer_gym.Tracking.ParticleFilterBase import Particle
-from rsoccer_gym.Perception.jetson_vision import JetsonVision
-
 
 class SSLVisionBlackoutEnv(SSLBaseEnv):
     """
@@ -39,7 +37,7 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
             Pose confidence is higher than threshold or 30 seconds (1200 steps)
     """
 
-    def __init__(self, initial_position=[], time_step=0.005, field_type=3, vertical_lines_nr=1, n_particles=0):
+    def __init__(self, initial_position=[], time_step=0.005, field_type=3, n_particles=0):
         super().__init__(field_type=field_type, 
                         n_robots_blue=1, 
                         n_robots_yellow=0, 
@@ -52,22 +50,13 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
         # LOADS VISION POSITION DATA
         self.initial_position =  initial_position
 
-        self.embedded_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
-                                            enable_field_detection=True,
-                                            enable_randomized_observations=True)
-        self.embedded_vision.jetson_cam.setPoseFrom3DModel(170, 106.7, 0)
-        #self.embedded_vision.jetson_cam.setPoseFrom3DModel(170, 107.2)
-
-        self.img = np.zeros((480, 640, 3), dtype=np.uint8)
-        self.has_goal = False
-        self.goal_bbox = [0, 0, 0, 0]
         #TODO: fix rSim field limits and add field margin
         self.set_field_limits(-0.3, 4.2, -3, 3, 0.3)
 
         self.action_space = gym.spaces.Box(low=-1, high=1,
                                            shape=(3, ), dtype=np.float32)
         
-        n_obs = 3 + 2*vertical_lines_nr
+        n_obs = 1
         self.observation_space = gym.spaces.Box(low=min(self.field.y_min, self.field.x_min),
                                                 high=max(self.field.y_max, self.field.x_max),
                                                 shape=(n_obs, ),
@@ -86,16 +75,12 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
         self.field.y_min = y_min
         self.field.y_max = y_max
 
-    def update_particles(self, particles, odometry_tracking, particle_filter_tracking, time_step):
+    def update(self, robot_position, particles, particle_filter_tracking, odometry_tracking, time_step, env_sleep=False):
         self.particles = particles
         self.trackers[0] = Particle(odometry_tracking, 0.2)
         self.trackers[1] = Particle(particle_filter_tracking, 0.2)
-        #time.sleep(time_step)
-
-    def update_img(self, img, has_goal, goal_bbox):
-        self.img = img
-        self.has_goal = has_goal
-        self.goal_bbox = goal_bbox
+        self.step(robot_position)
+        if env_sleep: time.sleep(time_step)
 
     def _render_particles(self):
         for i in range(self.n_particles):
@@ -105,22 +90,6 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
     def _frame_to_observations(self):
 
         observation = []
-        
-        _, _, tracked_goal, _, particle_filter_observations = self.embedded_vision.process_from_log(src=self.img, 
-                                                                                        timestamp=time.time(), 
-                                                                                        has_goal=self.has_goal, 
-                                                                                        goal_bounding_box=self.goal_bbox)
-        goal = self.embedded_vision.jetson_cam.xyToPolarCoordinates(tracked_goal.center_x, tracked_goal.center_y)
-        observation.append(self.has_goal)
-        observation.append(goal[0])
-        observation.append(goal[1])
-
-        boundary_ground_points, line_ground_points = particle_filter_observations
-        for point in boundary_ground_points:
-            point = self.embedded_vision.jetson_cam.xyToPolarCoordinates(point[0], point[1])
-            observation.append(point[0])
-            observation.append(point[1])
-
 
         return np.array(observation, dtype=np.float32)
 

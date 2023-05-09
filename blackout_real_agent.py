@@ -4,6 +4,8 @@ import cv2
 from rsoccer_gym.Tracking.ParticleFilterBase import ParticleFilter, Particle
 from rsoccer_gym.Tracking import ResamplingAlgorithms
 from rsoccer_gym.Plotter.Plotter import RealTimePlotter
+from rsoccer_gym.Perception.jetson_vision import JetsonVision
+from rsoccer_gym.Perception.Odometry import Odometry
 
 def split_observation(measurements):
     goal = measurements[:3]
@@ -58,12 +60,12 @@ if __name__ == "__main__":
 
     # Using VSS Single Agent env
     env = gym.make('SSLVisionBlackout-v0',
-                   vertical_lines_nr = vertical_lines_nr, 
                    n_particles = n_particles,
                    initial_position = initial_position,
                    time_step=data.get_timesteps_average())
     env.reset()
 
+    # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
                                    field=env.field,
                                    process_noise=[0.1, 0.1, 0.01],
@@ -72,27 +74,49 @@ if __name__ == "__main__":
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC)
     robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
 
-    # movements list
+    # Init Embedded Vision
+    jetson_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
+                                        enable_field_detection=True,
+                                        enable_randomized_observations=True)
+    jetson_vision.jetson_cam.setPoseFrom3DModel(170, 106.7, 0)
+    #self.embedded_vision.jetson_cam.setPoseFrom3DModel(170, 107.2)
+
+
+
+    # Movements list
     odometry = data.get_odometry()
     odometry_movements = data.get_odometry_movement(degrees=True)
     odometry_particle = Particle(initial_state=initial_position,
                                  movement_deviation=[0, 0, 0])
+    # Init Odometry
+    robot_odometry = Odometry(initial_position=odometry[0])
+    for frame_nr in data.frames:      
+        # update odometry:
+        # pose_new <= pose_old + rotate_to_local(movement, pose_old)
+        robot_odometry.update(odometry[env.steps])
+        movement = robot_odometry.rad2deg(robot_odometry.movement)
 
-    while env.steps<len(position)-1:
-        img = get_image_from_frame_nr(path, frames[env.steps])
-        env.update_img(img, has_goals[env.steps], goals[env.steps])
-        action = position[env.steps]
-        measurements, _, _, _ = env.step(action)
-        movement, goal, field_points = parse_particle_filter_data(measurements,
-                                                                  odometry_movements[env.steps],
-                                                                  odometry[env.steps][2],
-                                                                  data)
-        robot_tracker.update(movement, goal, field_points)
+        # capture frame:
+        # img, has_goal, goal <= frame
+        img, has_goal, goal_bbox = get_image_from_frame_nr(path, frame_nr), has_goals[env.steps], goals[env.steps]
+
+        # make observations:    
+        # observations <= jetson_vision.process(img, has_goal, goal)
+        _, _, _, _, particle_filter_observations = jetson_vision.process_from_log(src = img,
+                                                                                  timestamp = data.timestamps[env.steps],
+                                                                                  has_goal = has_goal,
+                                                                                  goal_bounding_box = goal_bbox)
+
+        # compute particle filter tracking:    
+        # avg_mcl_state, odometry <= robot_tracker.update(motion, observations)
+        robot_tracker.update(movement, particle_filter_observations)
         odometry_particle.move(movement)
-        particles_filter_tracking = robot_tracker.get_average_state()         
-        env.update_particles(robot_tracker.particles, 
-                             odometry_particle.state,
-                             particles_filter_tracking, 
-                             time_steps[env.steps])
+
+        # update visualization:    
+        env.update(position[env.steps], 
+                   robot_tracker.particles, 
+                   robot_tracker.get_average_state(), 
+                   odometry_particle.state, 
+                   time_steps[env.steps])
 
         env.render()
