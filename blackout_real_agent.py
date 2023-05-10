@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # CHOOSE SCENARIO
     scenario = 'sqr'
-    lap = 1
+    lap = 2
 
     # LOAD DATA
     path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     # SET INITIAL ROBOT POSITION AND SEED
     initial_position = position[0]
-    seed_radius = 20
+    seed_radius = 1
     initial_position[2] = np.degrees(initial_position[2])
 
     # Using VSS Single Agent env
@@ -52,10 +52,11 @@ if __name__ == "__main__":
     # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
                                    field=env.field,
-                                   process_noise=[1, 1, 0],
-                                   measurement_noise=[1, 1],
+                                   motion_noise=[0.1, 0.1, 0.01],
+                                   measurement_weights=[5, 0, 0],
                                    vertical_lines_nr=vertical_lines_nr,
-                                   resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC)
+                                   resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
+                                   initial_odometry=odometry[0])
     robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
 
     # Init Embedded Vision
@@ -66,13 +67,12 @@ if __name__ == "__main__":
     #self.embedded_vision.jetson_cam.setPoseFrom3DModel(170, 107.2)
 
     # Init Odometry
-    robot_odometry = Odometry(initial_position=odometry[0])
     odometry_particle = Particle(initial_state=initial_position,
                                 movement_deviation=[0, 0, 0])
     for frame_nr in data.frames:      
         # update odometry:
-        robot_odometry.update(odometry[env.steps])
-        movement = robot_odometry.rad2deg(robot_odometry.movement)
+        robot_tracker.odometry.update(odometry[env.steps])
+        movement = robot_tracker.odometry.rad2deg(robot_tracker.odometry.movement)
 
         # capture frame:
         img, has_goal, goal_bbox = get_image_from_frame_nr(path, frame_nr), has_goals[env.steps], goals[env.steps]
@@ -90,10 +90,7 @@ if __name__ == "__main__":
         # update visualization:    
         env.update(position[env.steps], 
                    robot_tracker.particles, 
-                   robot_tracker.get_average_state(), 
+                   robot_tracker.get_average_state(),
                    odometry_particle.state, 
                    time_steps[env.steps])
         env.render()
-
-        if frame_nr<data.frames[0]+3:
-            import pdb;pdb.set_trace()
