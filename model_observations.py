@@ -34,12 +34,8 @@ def get_point_from_vision_process(robot_vision, img, has_goal, goal):
 
 
     goal = robot_vision.jetson_cam.xyToPolarCoordinates(tracked_goal.center_x, tracked_goal.center_y)
-    boundary_ground_points, _ = particle_filter_observations
-    points = []
-    for point in boundary_ground_points:
-        point = robot_vision.jetson_cam.xyToPolarCoordinates(point[0], point[1])
-        points.append(point)
-    return has_goal, goal, points
+    robot_goal, robot_boundary_points, robot_field_points = particle_filter_observations
+    return has_goal, goal, robot_boundary_points
 
 def compute_particle_observation(particle, particle_vision, field):
     goal = particle_vision.track_positive_goal_center(                                    
@@ -67,7 +63,7 @@ if __name__ == "__main__":
 
     cwd = os.getcwd()
 
-    debug = True
+    debug = False
 
     step = 1
     vertical_lines_nr=1
@@ -76,7 +72,7 @@ if __name__ == "__main__":
                             enable_field_detection=True,
                             enable_randomized_observations=True,
                             debug=debug)
-    robot_vision.jetson_cam.setPoseFrom3DModel(170, 107.2)
+    robot_vision.jetson_cam.setPoseFrom3DModel(170, 106.8)
 
     particle_vision = ParticleVision(vertical_lines_nr=vertical_lines_nr)
     particle = Particle()
@@ -87,11 +83,14 @@ if __name__ == "__main__":
                               y_max=3)
     
     errors_log = []
-    quadrados = [15] #TODO: remover falsos positivos das detecções de gol
 
-    for quadrado_nr in quadrados:
+    # CHOOSE SCENARIO
+    scenario = 'sqr'
+    laps = [1] #TODO: remover falsos positivos das detecções de gol
+
+    for lap in laps:
         # LOAD DATASET FROM REAL EXPERIMENTS
-        path = cwd+f'/localization_data/sqr_02'
+        path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
         path_to_log = path+'/logs/processed.csv'
         data = Read(path_to_log, is_raw=False)
         frames = data.get_frames()
@@ -115,7 +114,7 @@ if __name__ == "__main__":
             if len(robot_boundary_points)>0:
                 particle_vision.set_detection_angles_from_list([robot_boundary_points[0][1]])
                 _, particle_boundary_points = compute_particle_observation(particle, particle_vision, field)
-                data = serialize_observation_data_to_log(quadrado_nr, 
+                data = serialize_observation_data_to_log(lap, 
                                                         frames[i], 
                                                         robot_boundary_points,
                                                         particle_boundary_points)
@@ -132,12 +131,12 @@ if __name__ == "__main__":
                 else:
                     errors_log.append(data)
 
-    dir = cwd+f"/observations_data/log.csv"
-    fields = ["QUADRADO NR", "FRAME NR", "EXPECTED DIST", "MEASURED DIST", "ANGLE"]
-    with open(dir, 'w') as f:
-        write = csv.writer(f)
-        write.writerow(fields)
-        write.writerows(errors_log)
-                         
-    
-    
+    print("Computation finished! Saving log...")
+
+    if len(errors_log)>1:
+        dir = cwd+f"/observations_data/log.csv"
+        fields = ["QUADRADO NR", "FRAME NR", "EXPECTED DIST", "MEASURED DIST", "ANGLE"]
+        with open(dir, 'w') as f:
+            write = csv.writer(f)
+            write.writerow(fields)
+            write.writerows(errors_log)

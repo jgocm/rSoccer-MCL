@@ -669,7 +669,7 @@ class Camera():
         x, y = object_position[0], object_position[1]
 
         # CONVERT COORDINATES FROM CAMERA TO ROBOT AXIS
-        x, y, w = self.cameraToRobotCoordinates(x[0], y[0])
+        x, y, w = self.cameraToRobotCoordinates(x[0], y[0], camera_offset=80)
         return x, y, w
 
     def xyToPolarCoordinates(self, x, y):

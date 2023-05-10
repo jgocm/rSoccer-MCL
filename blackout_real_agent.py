@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # CHOOSE SCENARIO
     scenario = 'sqr'
-    lap = 2
+    lap = 1
 
     # LOAD DATA
     path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     # SET INITIAL ROBOT POSITION AND SEED
     initial_position = position[0]
-    seed_radius = 2
+    seed_radius = 20
     initial_position[2] = np.degrees(initial_position[2])
 
     # Using VSS Single Agent env
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
                                    field=env.field,
-                                   process_noise=[0.1, 0.1, 0.01],
+                                   process_noise=[1, 1, 0],
                                    measurement_noise=[1, 1],
                                    vertical_lines_nr=vertical_lines_nr,
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     jetson_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
                                         enable_field_detection=True,
                                         enable_randomized_observations=True)
-    jetson_vision.jetson_cam.setPoseFrom3DModel(170, 106.7, 0)
+    jetson_vision.jetson_cam.setPoseFrom3DModel(170, 106.8)
     #self.embedded_vision.jetson_cam.setPoseFrom3DModel(170, 107.2)
 
     # Init Odometry
@@ -94,3 +94,6 @@ if __name__ == "__main__":
                    odometry_particle.state, 
                    time_steps[env.steps])
         env.render()
+
+        if frame_nr<data.frames[0]+3:
+            import pdb;pdb.set_trace()

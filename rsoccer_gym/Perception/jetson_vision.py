@@ -181,7 +181,6 @@ class JetsonVision():
         return boundary_ground_points, line_ground_points
     def checkGroundPointValidity(self, dist, theta):
         if dist>8 or abs(theta)>40: 
-            print("invalid ground point")
             return False
         else: return True
         
