@@ -104,3 +104,18 @@ def compute_required_number_of_particles_kld(k, epsilon, upper_quantile):
     # Helper variable (part between curly brackets in (7) in Fox paper
     x = 1.0 - 2.0 / (9.0*(k-1)) + np.sqrt(2.0 / (9.0*(k-1))) * upper_quantile
     return np.ceil((k-1) / (2.0*epsilon) * x * x * x)
+
+def is_out_of_field(particle_state, x_min, x_max, y_min, y_max):
+    '''
+    Check if particle is out of field boundaries
+    
+    param: current field configurations
+    return: True if particle is out of field boundaries
+    '''
+    if particle_state[0] < x_min or \
+       particle_state[0] > x_max or \
+       particle_state[1] < y_min or \
+       particle_state[1] > y_max:
+        return True
+    else:
+        return False

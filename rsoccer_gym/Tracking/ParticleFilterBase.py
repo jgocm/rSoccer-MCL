@@ -4,6 +4,7 @@ from rsoccer_gym.Perception.ParticleVision import ParticleVision
 from rsoccer_gym.Tracking.Resampler import Resampler
 from rsoccer_gym.Perception.entities import Field
 from rsoccer_gym.Tracking.Odometry import Odometry
+from .particle_filter_helpers import *
 
 class Particle:
     '''
@@ -38,6 +39,12 @@ class Particle:
 
     def as_weighted_sample(self):
         return [self.weight,[self.x, self.y, self.theta]]
+
+    def from_numpy_array(self, sample):
+        self.__init__(weight=sample[0], initial_state=sample[1:])
+
+    def as_numpy_array(self):
+        return np.array([self.weight, self.x, self.y, self.theta])
 
     def is_out_of_field(self, x_min, x_max, y_min, y_max):
         '''
@@ -197,6 +204,12 @@ class ParticleFilter:
         for particle in self.particles:
             samples.append(particle.as_weighted_sample())
         return samples
+    
+    def particles_as_numpy_arrays(self):
+        samples = []
+        for particle in self.particles:
+            samples.append(particle.as_numpy_array())
+        return np.array(samples)
 
     def get_average_state(self):
         """
@@ -264,16 +277,16 @@ class ParticleFilter:
             if particle.is_out_of_field(x_min=self.x_min, x_max=self.x_max, y_min=self.y_min, y_max=self.y_max):
                 particle.weight = 0
 
-    def compute_observation(self, particle):
+    def compute_observation(self, particle_state):
         goal = self.vision.track_positive_goal_center(                                    
-                                    particle.x, 
-                                    particle.y, 
-                                    particle.theta, 
+                                    particle_state[0], 
+                                    particle_state[1], 
+                                    particle_state[2], 
                                     self.field)
         boundary_points = self.vision.detect_boundary_points(
-                                    particle.x, 
-                                    particle.y, 
-                                    particle.theta, 
+                                    particle_state[0], 
+                                    particle_state[1], 
+                                    particle_state[2], 
                                     self.field)
         
         return goal, boundary_points
@@ -310,36 +323,14 @@ class ParticleFilter:
         d = np.abs(diff)/180
         return d
 
-    def compute_goal_similarity(self, alpha_distance=5, alpha_angle=10, robot_observation=[], particle_observation=[]):
+    def compute_goal_similarity(self, robot_observation=[], particle_observation=[]):
         # Returns 1 if robot does not see the goal
         if not robot_observation: return 1
 
         # Returns 0 if particle's angle to goal is too high
         else: return particle_observation[0]
 
-        # initial value
-        likelihood_sample = 1
-
-        # Compute difference between real measurements and sample observations
-        differences = np.array(robot_observation) - particle_observation
-        differences[2] = self.compute_normalized_angle_diff(differences[2])
-        
-        # Map difference true and expected angle measurement to probability
-        p_z_given_distance = \
-            np.exp(-alpha_distance * (differences[1]) * (differences[1]) /
-                (robot_observation[1] * robot_observation[1]))
-        p_z_given_angle = \
-            np.exp(-alpha_angle * (differences[2]) * (differences[2]) /
-                (robot_observation[1] * robot_observation[1]))
-            
-        # Incorporate likelihoods current landmark
-        likelihood_sample *= p_z_given_distance*p_z_given_angle
-        if likelihood_sample<1e-15:
-            return 0
-
-        return likelihood_sample
-
-    def compute_likelihood(self, observations, particle):
+    def compute_likelihood(self, observations, particle_state):
         """
         Compute likelihood p(z|sample) for a specific measurement given sample observations.
 
@@ -348,24 +339,24 @@ class ParticleFilter:
         :return Likelihood
         """
         # Check if particle is out of field boundaries
-        if particle.is_out_of_field(x_min=self.x_min, x_max=self.x_max, y_min=self.y_min, y_max=self.y_max):
+        if is_out_of_field(particle_state=particle_state, x_min=self.x_min, x_max=self.x_max, y_min=self.y_min, y_max=self.y_max):
             return 0
 
         else:
             # Parse particle filter observations
-            robot_goal, robot_boundary_points, robot_field_points = observations
+            robot_goal, robot_boundary_points, _ = observations
 
             # Initialize measurement likelihood
             likelihood_sample = 1.0
             
             # Compute particle observations
-            particle_goal, particle_boundary_points = self.compute_observation(particle)
+            particle_goal, particle_boundary_points = self.compute_observation(particle_state)
             
             # Compute similarity from field boundary points
             likelihood_sample *= self.compute_boundary_points_similarity(self.measurement_weights[0], robot_boundary_points, particle_boundary_points)
 
             # Compute similarity from goal center
-            likelihood_sample *= self.compute_goal_similarity(self.measurement_weights[1], self.measurement_weights[2], robot_goal, particle_goal)
+            likelihood_sample *= self.compute_goal_similarity(robot_goal, particle_goal)
 
             # Return importance weight based on all landmarks
             return likelihood_sample
@@ -387,10 +378,10 @@ class ParticleFilter:
         Checks if resampling is needed
         '''
         # computes average for evaluating current state
-        avg_particle = Particle(self.get_average_state(), 1)
-        weight = self.compute_likelihood(observations, avg_particle)
+        avg_particle_state = self.get_average_state()
+        weight = self.compute_likelihood(observations, self.get_average_state())
         self.average_particle_weight = weight
-        pxx = self.compute_covariance(avg_particle.state)
+        pxx = self.compute_covariance(avg_particle_state)
         #print(f'pxx: {pxx}')
         #if pxx>0.005:
         #    return True
@@ -425,11 +416,14 @@ class ParticleFilter:
         weights = []
         self.prior_weights_sum = 0
         for particle in self.particles:
+            # Get particle current state
+            particle_state = particle.as_numpy_array()[1:]
+
             # Propagate the particle's state according to the current movements
             particle.move(movement)
 
             # Compute current particle's weight based on likelihood
-            weight = particle.weight * self.compute_likelihood(observations, particle)
+            weight = particle.weight * self.compute_likelihood(observations, particle_state)
 
             # Store weight for normalization
             weights.append(weight)
@@ -439,10 +433,7 @@ class ParticleFilter:
 
         # Update to normalized weights
         weights = self.normalize_weights(weights)
-        self.n_active_particles = self.n_particles
         for i in range(self.n_particles):
-            if weights[i]<self.SMALL_VALUE:
-                self.n_active_particles = self.n_active_particles-1
             self.particles[i].weight = weights[i]
 
         # Resample if needed
