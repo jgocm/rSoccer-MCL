@@ -190,7 +190,7 @@ class Resampler:
         :return: Resampled weighted particles.
         """
         # Compute cumulative sum
-        weights = [weighted_sample[0] for weighted_sample in samples]
+        weights = samples[:, 0]
         Q = cumulative_sum(weights)
 
         # Only draw one sample
@@ -214,7 +214,7 @@ class Resampler:
             # Add state sample (uniform weights)
             rnd = np.random.uniform(-1, 1, 3)
             delta = np.array([0.2, 0.2, 15])
-            new_sample = samples[m][1] + (1-samples[m][0])*delta*rnd
+            new_sample = samples[m][1:] + (1-samples[m][0])*delta*rnd
             weight = samples[m][0]
             new_samples.append([weight, new_sample])
 
