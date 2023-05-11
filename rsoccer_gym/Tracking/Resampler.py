@@ -46,7 +46,7 @@ class Resampler:
         elif algorithm is ResamplingAlgorithms.SYSTEMATIC:
             return self.__systematic(samples, N)
 
-        print("Resampling method {} is not specified!".format(algorithm))
+        print(f"Resampling method {algorithm} is not specified!")
 
     @staticmethod
     def __multinomial(samples, N):
@@ -190,36 +190,35 @@ class Resampler:
         :return: Resampled weighted particles.
         """
         # Compute cumulative sum
-        weights = [weighted_sample[0] for weighted_sample in samples]
+        weights = samples[:, 0]
         Q = cumulative_sum(weights)
-
+        
         # Only draw one sample
-        u0 = np.random.uniform(1e-10, 1.0 / N, 1)[0]
+        u0 = np.random.uniform(1e-10, Q[-1] / N, 1)[0]
 
         # As long as the number of new samples is insufficient
         n = 0
-        m = 0  # index first element
+        _m = 0  # index first element
         new_samples = []
         while n < N:
 
             # Compute u for current particle (deterministic given u0)
-            u = u0 + float(n) / N
+            _u = u0 + float(n)*Q[-1] / N
 
             # u increases every loop hence we only move from left to right while iterating Q
 
             # Get first sample for which cumulative sum is above u
-            while Q[m] < u:
-                m += 1
-
-            # Add state sample (uniform weights)
+            while Q[_m] < _u:
+                _m += 1
+                
+            # Add state sample
             rnd = np.random.uniform(-1, 1, 3)
             delta = np.array([0.2, 0.2, 15])
-            new_sample = samples[m][1] + (1-samples[m][0])*delta*rnd
-            weight = samples[m][0]
-            new_samples.append([weight, new_sample])
-
+            new_state = samples[_m][1:] + (1-samples[_m][0]/Q[-1])*delta*rnd
+            new_sample = np.insert(new_state, 0, samples[_m][0])
+            new_samples.append(new_sample)    
             # Added another sample
             n += 1
 
         # Return new samples
-        return new_samples
+        return np.array(new_samples, dtype=np.float16)

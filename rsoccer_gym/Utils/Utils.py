@@ -1,26 +1,33 @@
 import numpy as np
-import gym
 
-# Base on baselines implementation
-class OrnsteinUhlenbeckAction(object):
-    def __init__(self, action_space, theta=.17, dt=0.025, x0=None):
-        self.theta = theta
-        self.mu = (action_space.high + action_space.low) / 2
-        self.sigma = (action_space.high - self.mu) / 2
-        self.dt = dt
-        self.x0 = x0
-        self.reset()
+def is_out_of_field(particle, x_min, x_max, y_min, y_max):
+    '''
+    Check if particle is out of field boundaries
+    
+    param: current field configurations
+    return: True if particle is out of field boundaries
+    '''
+    if particle[1] < x_min or particle[1] > x_max or particle[2] < y_min or particle[2] > y_max:
+        return True
+    else:
+        return False
 
-    def sample(self):
-        x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt + self.sigma * np.sqrt(self.dt) * np.random.normal(size=self.mu.shape)
-        self.x_prev = x
-        return x
+def rotate_to_global(local_x, local_y, robot_w):
+    theta = np.deg2rad(robot_w)
+    global_x = local_x*np.cos(theta) - local_y*np.sin(theta)
+    global_y = local_x*np.sin(theta) + local_y*np.cos(theta)
+    return global_x, global_y
 
-    def reset(self):
-        self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
+def add_move_noise(movement, deviation):
+    standard_deviation_vector = np.abs(movement)*deviation
+    return np.random.normal(movement, standard_deviation_vector, 3)
 
-    def __repr__(self):
-        return 'OrnsteinUhlenbeckActionNoise(mu={}, sigma={})'.format(self.mu, self.sigma)
+def limit_angle_degrees(angle):
+    while angle > 180:
+        angle -= 2*180
+    while angle < -180:
+        angle += 2*180
+    return angle
 
 class Pose3D:
     x: float

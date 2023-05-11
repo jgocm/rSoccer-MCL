@@ -3,7 +3,6 @@ import numpy as np
 import time
 from rsoccer_gym.Entities import Frame, Robot, Ball
 from rsoccer_gym.ssl.ssl_gym_base import SSLBaseEnv
-from rsoccer_gym.Tracking.ParticleFilterBase import Particle
 
 class SSLVisionBlackoutEnv(SSLBaseEnv):
     """
@@ -77,8 +76,8 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
 
     def update(self, robot_position, particles, particle_filter_tracking, odometry_tracking, time_step, env_sleep=False):
         self.particles = particles
-        self.trackers[0] = Particle(odometry_tracking, 0.2)
-        self.trackers[1] = Particle(particle_filter_tracking, 0.2)
+        self.trackers[0] = np.insert(odometry_tracking, 0, 0.2)
+        self.trackers[1] = np.insert(particle_filter_tracking, 0, 0.2)
         self.step(robot_position)
         if env_sleep: time.sleep(time_step)
 
@@ -144,6 +143,6 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
             pos_frame.robots_blue[i] = Robot(x=pos[0], y=pos[1], theta=pos[2])
         
         for i in range(self.n_particles):
-            pos_frame.particles[i] = Particle()
+            pos_frame.particles[i] = np.array([0, 0, 0, 0])
 
         return pos_frame

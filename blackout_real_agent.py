@@ -53,10 +53,11 @@ if __name__ == "__main__":
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
                                    field=env.field,
                                    motion_noise=[0.1, 0.1, 0.01],
-                                   measurement_weights=[5, 0, 0],
+                                   measurement_weights=[1],
                                    vertical_lines_nr=vertical_lines_nr,
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
-                                   initial_odometry=odometry[0])
+                                   initial_odometry=odometry[0],
+                                   data_type = np.float64)
     robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
 
     # Init Embedded Vision

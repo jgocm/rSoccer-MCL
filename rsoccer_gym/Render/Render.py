@@ -143,17 +143,17 @@ class RCGymRender:
         self.ball.set_translation(frame.ball.x, frame.ball.y)
 
         for i, particle in enumerate(frame.particles.values()):
-            self.particles[i].set_translation(particle.x, particle.y)   # x and y in meters?
-            self.particles[i].set_rotation(np.deg2rad(particle.theta))  # theta in radians or degrees?
-            scale = 2.5*particle.weight + 0.5
-            if particle.weight == 0: scale = 0
+            self.particles[i].set_translation(particle[1], particle[2])   # x and y in meters?
+            self.particles[i].set_rotation(np.deg2rad(particle[3]))  # theta in radians or degrees?
+            scale = 2.5*particle[0] + 0.5
+            if particle[0] == 0: scale = 0
             self.particles[i].set_scale(scale, scale)
 
         for i, tracker in enumerate(frame.trackers.values()):
-            self.trackers[i].set_translation(tracker.x, tracker.y)
-            self.trackers[i].set_rotation(np.deg2rad(tracker.theta))  # theta in radians or degrees?
-            scale = 2.5*tracker.weight + 0.5
-            if tracker.weight == 0: scale = 0
+            self.trackers[i].set_translation(tracker[1], tracker[2])
+            self.trackers[i].set_rotation(np.deg2rad(tracker[3]))  # theta in radians or degrees?
+            scale = 2.5*tracker[0] + 0.5
+            if tracker[0] == 0: scale = 0
             self.trackers[i].set_scale(scale, scale)
 
         for i, blue in enumerate(frame.robots_blue.values()):

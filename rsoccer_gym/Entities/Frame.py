@@ -12,8 +12,8 @@ class Frame:
         self.ball: Ball = Ball()
         self.robots_blue: Dict[int, Robot] = {}
         self.robots_yellow: Dict[int, Robot] = {}
-        self.particles: Dict[int, Particle] = {}
-        self.trackers: Dict[int, Particle] = {}
+        self.particles: Dict[int, np.array()] = {}
+        self.trackers: Dict[int, np.array()] = {}
 class FrameSSL(Frame):
     def parse(self, state, n_blues=3, n_yellows=3):
         """It parses the state received from grSim in a common state for environment"""
