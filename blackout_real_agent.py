@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
                                    field=env.field,
-                                   motion_noise=[1, 1, 0.1],
+                                   motion_noise=[0.1, 0.1, 0.01],
                                    measurement_weights=[5],
                                    vertical_lines_nr=vertical_lines_nr,
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,

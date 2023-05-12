@@ -214,12 +214,13 @@ class Resampler:
             # Add state sample (uniform weights)
             rnd = np.random.uniform(-1, 1, 3)
             delta = np.array([0.2, 0.2, 15])
-            new_sample = samples[m][1:] + (1-samples[m][0])*delta*rnd
-            weight = samples[m][0]
-            new_samples.append([weight, new_sample])
+            new_state = samples[m][1:] + (1-samples[m][0])*delta*rnd
+            new_weight = samples[m][0]
+            new_sample = np.insert(new_state, 0, new_weight)
+            new_samples.append(new_sample)
 
             # Added another sample
             n += 1
 
         # Return new samples
-        return new_samples
+        return np.array(new_samples)

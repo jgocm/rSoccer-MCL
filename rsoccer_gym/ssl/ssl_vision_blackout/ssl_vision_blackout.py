@@ -79,6 +79,7 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
         for i in range(self.n_particles):
             self.particles[i] = Particle()
             self.particles[i].from_numpy_array(particles[i])
+            if particles[i][0]>1: import pdb;pdb.set_trace()
         self.trackers[0] = Particle(odometry_tracking, 0.2)
         self.trackers[1] = Particle(particle_filter_tracking, 0.2)
         self.step(robot_position)

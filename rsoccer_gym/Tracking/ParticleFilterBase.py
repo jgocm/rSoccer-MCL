@@ -177,7 +177,7 @@ class ParticleFilter:
             particle = self.set_particle(weight, x, y, orientation)
             particles.append(particle)
         
-        self.particles = particles
+        self.particles = np.array(particles)
         
     def initialize_particles_uniform(self):
         """
@@ -249,7 +249,7 @@ class ParticleFilter:
 
         :return: Maximum particle weight
         """
-        return max([particle.as_weigthed_sample()[0] for particle in self.particles])
+        return max(self.particles[:, 0])
 
     def normalize_weights(self, weights):
         """
@@ -257,6 +257,11 @@ class ParticleFilter:
 
         Receives weights as a list
         """
+        # Total number of weights
+        n_weights = len(weights)
+
+        # Update prior weights sum
+        self.prior_weights_sum = np.sum(weights)
 
         # Check if weights are non-zero
         if self.prior_weights_sum < self.SMALL_VALUE:
@@ -264,7 +269,7 @@ class ParticleFilter:
             self.failure = True
 
             # Set uniform weights
-            return np.ones(self.n_particles) / self.n_particles
+            return np.ones(n_weights) / n_weights
 
         # Return normalized weights
         return weights / self.prior_weights_sum
@@ -398,33 +403,19 @@ class ParticleFilter:
             self.vision.set_detection_angles_from_list([observations[1][0][1]])
 
         weights = []
-        self.prior_weights_sum = 0
         self.displacement += movement
         for particle in self.particles:
-            # Get particle current state as numpy array
-            old_state = np.array(particle[1:])    
-
             # Propagate the particle's state according to the current movements
-            new_state = self.propagate_particle(old_state, movement, self.motion_noise)
-            #if step>375: import pdb;pdb.set_trace()
+            particle[1:] = self.propagate_particle(particle[1:], movement, self.motion_noise)
             
             # Compute current particle's weight based on likelihood
-            weight = particle[0] * self.compute_likelihood(observations, new_state)
+            weight = particle[0] * self.compute_likelihood(observations, particle[1:])
 
             # Store weight for normalization
             weights.append(weight)
 
-            # Update prior weights' sum
-            self.prior_weights_sum += weight
-
-            # Update particle state
-            particle[1], particle[2], particle[3] = new_state[0], new_state[1], new_state[2]
-            #particle.state = new_state.tolist()
-
         # Update to normalized weights
-        weights = self.normalize_weights(np.array(weights))
-        for i in range(self.n_particles):
-            self.particles[i][0] = weights[i]
+        self.particles[:, 0] = self.normalize_weights(np.array(weights))
 
         # Computes average for evaluating current state
         self.average_particle_weight = self.compute_likelihood(observations, self.get_average_state())
@@ -432,19 +423,15 @@ class ParticleFilter:
         # Resample if needed
         if self.needs_resampling():
             self.displacement = np.zeros(3)
-            samples = self.resampler.resample(np.array(self.particles), 
+            new_samples = self.resampler.resample(self.particles, 
                                               self.n_particles, 
                                               self.resampling_algorithm)
-            #import pdb;pdb.set_trace()
-            for i in range(self.n_particles):
-                self.particles[i] = self.set_particle(samples[i][0], 
-                                                      samples[i][1][0], 
-                                                      samples[i][1][1], 
-                                                      samples[i][1][2])
-                weights[i] = self.particles[i][0]
-            self.normalize_weights(np.array(weights))
-            for i in range(self.n_particles):
-                self.particles[i][0] = weights[i]
+            self.particles[:, 1:] = new_samples[:, 1:]
+            weights = new_samples[:, 0]
+            self.particles[:, 0] = self.normalize_weights(weights)
+        
+        # Checking if weights are < 1
+        if max(self.particles[:, 0])>1: import pdb;pdb.set_trace()
 
 if __name__=="__main__":
     from rsoccer_gym.ssl.ssl_gym_base import SSLBaseEnv
