@@ -119,15 +119,16 @@ def is_out_of_field(particle_state, x_min, x_max, y_min, y_max):
         return True
     else:
         return False
-    
-def rotate_to_global(local_x, local_y, robot_w):
-    theta = np.deg2rad(robot_w)
+
+def rotate_to_global(robot_orientation, local_x, local_y, robot_rotation):
+    theta = np.deg2rad(robot_orientation)
     global_x = local_x*np.cos(theta) - local_y*np.sin(theta)
     global_y = local_x*np.sin(theta) + local_y*np.cos(theta)
-    return global_x, global_y
+    return np.array([global_x, global_y, robot_rotation])
 
-def add_move_noise(movement, deviation):
-    standard_deviation_vector = np.abs(movement)*deviation
+def add_move_noise(movement, movement_deviation):
+    movement_abs = np.array([np.abs(movement[0]), np.abs(movement[1]), np.abs(movement[2])])
+    standard_deviation_vector = movement_deviation*movement_abs
     return np.random.normal(movement, standard_deviation_vector, 3)
 
 def limit_angle_degrees(angle):
@@ -136,3 +137,7 @@ def limit_angle_degrees(angle):
     while angle < -180:
         angle += 2*180
     return angle
+
+def limit_angle_from_pose(pose):
+    pose[2] = limit_angle_degrees(pose[2])
+    return pose

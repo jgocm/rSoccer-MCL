@@ -5,7 +5,8 @@ from rsoccer_gym.Tracking.ParticleFilterBase import ParticleFilter, Particle
 from rsoccer_gym.Tracking import ResamplingAlgorithms
 from rsoccer_gym.Plotter.Plotter import RealTimePlotter
 from rsoccer_gym.Perception.jetson_vision import JetsonVision
-from rsoccer_gym.Tracking.Odometry import Odometry
+from rsoccer_gym.Tracking.particle_filter_helpers import *
+
 
 def get_image_from_frame_nr(path_to_images_folder, frame_nr):
     dir = path_to_images_folder+f'/cam/{frame_nr}.png'
@@ -22,7 +23,7 @@ if __name__ == "__main__":
 
     # CHOOSE SCENARIO
     scenario = 'sqr'
-    lap = 2
+    lap = 3
 
     # LOAD DATA
     path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
                                    field=env.field,
-                                   motion_noise=[0.1, 0.1, 0.01],
+                                   motion_noise=[1, 1, 0.1],
                                    measurement_weights=[5],
                                    vertical_lines_nr=vertical_lines_nr,
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
@@ -72,7 +73,7 @@ if __name__ == "__main__":
     for frame_nr in data.frames:      
         # update odometry:
         robot_tracker.odometry.update(odometry[env.steps])
-        movement = robot_tracker.odometry.rad2deg(robot_tracker.odometry.movement)
+        movement = limit_angle_from_pose(robot_tracker.odometry.rad2deg(robot_tracker.odometry.movement))
 
         # capture frame:
         img, has_goal, goal_bbox = get_image_from_frame_nr(path, frame_nr), has_goals[env.steps], goals[env.steps]
@@ -84,7 +85,7 @@ if __name__ == "__main__":
                                                                                   goal_bounding_box = goal_bbox)
 
         # compute particle filter tracking:    
-        robot_tracker.update(movement, particle_filter_observations)
+        robot_tracker.update(movement, particle_filter_observations, env.steps)
         odometry_particle.move(movement)
 
         # update visualization:    
