@@ -112,7 +112,7 @@ class ParticleFilter:
         # Initialize filter settings
         self.n_particles = number_of_particles
         self.n_active_particles = number_of_particles
-        self.particles = []
+        self.particles = self.reset_particles()
         self.numpy_particles = self.reset_particles()
 
         # Metrics for evaluating the particles' quality
@@ -174,9 +174,7 @@ class ParticleFilter:
             orientation = np.random.uniform(0, 360)
             x = seed_x + radius*math.cos(direction)
             y = seed_y + radius*math.sin(direction)
-            particle = Particle(initial_state=[x, y, orientation], 
-                                weight=weight, 
-                                movement_deviation=self.motion_noise)
+            particle = self.set_particle(weight, x, y, orientation)
             particles.append(particle)
         
         self.particles = particles
@@ -232,16 +230,16 @@ class ParticleFilter:
         # Compute sum of all weights
         sum_weights = 0.0
         for particle in self.particles:
-            sum_weights += particle.weight
+            sum_weights += particle[0]
 
         # Compute weighted average
         avg_x = 0.0
         avg_y = 0.0
         avg_theta = 0.0
         for particle in self.particles:
-            avg_x += particle.x / sum_weights * particle.weight
-            avg_y += particle.y / sum_weights * particle.weight
-            avg_theta = limit_angle_degrees(avg_theta + particle.theta / sum_weights * particle.weight)
+            avg_x += particle[1] / sum_weights * particle[0]
+            avg_y += particle[2] / sum_weights * particle[0]
+            avg_theta = limit_angle_degrees(avg_theta + particle[3] / sum_weights * particle[0])
 
         return [avg_x, avg_y, avg_theta]
 
@@ -359,11 +357,11 @@ class ParticleFilter:
         Pxx = 0
         ux = np.array(avg_particle)
         for particle in self.particles:
-            diff = particle.state - ux
+            diff = particle[1:] - ux
             diff[0] = diff[0]/self.x_max
             diff[1] = diff[1]/self.x_max
             diff[2] = self.compute_normalized_angle_diff(diff[2])
-            Pxx += particle.weight*diff@diff
+            Pxx += particle[0]*diff@diff
 
         return Pxx      
 
@@ -381,7 +379,7 @@ class ParticleFilter:
             return True
 
         for particle in self.particles:
-            if particle.weight>0.9:
+            if particle[0]>0.9:
                 return True
 
         else: return False
@@ -404,14 +402,14 @@ class ParticleFilter:
         self.displacement += movement
         for particle in self.particles:
             # Get particle current state as numpy array
-            old_state = np.array(particle.state)    
+            old_state = np.array(particle[1:])    
 
             # Propagate the particle's state according to the current movements
             new_state = self.propagate_particle(old_state, movement, self.motion_noise)
             #if step>375: import pdb;pdb.set_trace()
             
             # Compute current particle's weight based on likelihood
-            weight = particle.weight * self.compute_likelihood(observations, new_state)
+            weight = particle[0] * self.compute_likelihood(observations, new_state)
 
             # Store weight for normalization
             weights.append(weight)
@@ -420,13 +418,13 @@ class ParticleFilter:
             self.prior_weights_sum += weight
 
             # Update particle state
-            particle.x, particle.y, particle.theta = new_state[0], new_state[1], new_state[2]
-            particle.state = new_state.tolist()
+            particle[1], particle[2], particle[3] = new_state[0], new_state[1], new_state[2]
+            #particle.state = new_state.tolist()
 
         # Update to normalized weights
         weights = self.normalize_weights(np.array(weights))
         for i in range(self.n_particles):
-            self.particles[i].weight = weights[i]
+            self.particles[i][0] = weights[i]
 
         # Computes average for evaluating current state
         self.average_particle_weight = self.compute_likelihood(observations, self.get_average_state())
@@ -434,16 +432,19 @@ class ParticleFilter:
         # Resample if needed
         if self.needs_resampling():
             self.displacement = np.zeros(3)
-            samples = self.resampler.resample(self.particles_as_numpy_arrays(), 
+            samples = self.resampler.resample(np.array(self.particles), 
                                               self.n_particles, 
                                               self.resampling_algorithm)
+            #import pdb;pdb.set_trace()
             for i in range(self.n_particles):
-                self.particles[i].from_weighted_sample(samples[i])
-                self.particles[i].movement_deviation = self.motion_noise
-                weights[i] = self.particles[i].weight
+                self.particles[i] = self.set_particle(samples[i][0], 
+                                                      samples[i][1][0], 
+                                                      samples[i][1][1], 
+                                                      samples[i][1][2])
+                weights[i] = self.particles[i][0]
             self.normalize_weights(np.array(weights))
             for i in range(self.n_particles):
-                self.particles[i].weight = weights[i]
+                self.particles[i][0] = weights[i]
 
 if __name__=="__main__":
     from rsoccer_gym.ssl.ssl_gym_base import SSLBaseEnv

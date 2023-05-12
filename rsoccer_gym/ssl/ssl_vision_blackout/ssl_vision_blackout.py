@@ -76,7 +76,9 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
         self.field.y_max = y_max
 
     def update(self, robot_position, particles, particle_filter_tracking, odometry_tracking, time_step, env_sleep=False):
-        self.particles = particles
+        for i in range(self.n_particles):
+            self.particles[i] = Particle()
+            self.particles[i].from_numpy_array(particles[i])
         self.trackers[0] = Particle(odometry_tracking, 0.2)
         self.trackers[1] = Particle(particle_filter_tracking, 0.2)
         self.step(robot_position)
