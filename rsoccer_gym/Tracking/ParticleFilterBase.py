@@ -152,6 +152,21 @@ class ParticleFilter:
     def set_particle(self, weight=0, x=0, y=0, theta=0):
         return np.array([weight, x, y, theta], dtype=self.data_type)
 
+    def propagate_particles_as_matrix(self, movement, motion_noise):
+        # adds gaussian noise to movement vector
+        movement_abs = np.abs(movement)
+        standard_deviation_vector = motion_noise*movement_abs
+        noisy_movement = np.random.normal(movement, standard_deviation_vector, (self.n_particles, 3))
+
+        # rotates movement vector to global axis
+        thetas = np.deg2rad(self.particles[:, 3])
+        global_xs = noisy_movement[:, 0]*np.cos(thetas) - noisy_movement[:, 1]*np.sin(thetas)
+        global_ys = noisy_movement[:, 0]*np.sin(thetas) + noisy_movement[:, 1]*np.cos(thetas)
+        global_movement = np.column_stack([global_xs, global_ys, noisy_movement[:, 2]])
+
+        # sums movements
+        self.particles[:, 1:] += global_movement
+
     def propagate_particle(self, particle_state, movement, motion_noise):
         noisy_movement = add_move_noise(movement, motion_noise)
         global_movement = rotate_to_global(particle_state[2], noisy_movement[0], noisy_movement[1], noisy_movement[2])
@@ -289,8 +304,6 @@ class ParticleFilter:
 
             # Incorporate likelihoods current landmark
             likelihood_sample *= p_z_given_distance
-            if likelihood_sample<self.SMALL_VALUE:
-                return 0
 
         return likelihood_sample
 
@@ -389,12 +402,11 @@ class ParticleFilter:
         if len(observations[1])>0:
             self.vision.set_detection_angles_from_list([observations[1][0][1]])
 
+        # Propagate the particles' states according to the current movements
         self.displacement += movement
+        self.propagate_particles_as_matrix(movement, self.motion_noise)
+
         for particle in self.particles:
-            # Propagate the particle's state according to the current movements
-            # TODO: implement for moving all particles simmutaneously with matrix operations
-            particle[1:] = self.propagate_particle(particle[1:], movement, self.motion_noise)
-            
             # Compute current particle's weight based on likelihood
             particle[0] *= self.compute_likelihood(observations, particle[1:])
 

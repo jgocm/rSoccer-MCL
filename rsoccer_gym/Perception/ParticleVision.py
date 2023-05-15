@@ -158,7 +158,8 @@ class ParticleVision:
             x1, y1 = self.intercept_right_boundary(a, b, field)
             x2, y2 = self.intercept_lower_boundary(a, b, field)
         else:
-            import pdb;pdb.set_trace()
+            return -1, -1
+        
         if self.get_distance(x, y, x1, y1) < self.get_distance(x, y, x2, y2):
             return x1, y1
         else:
