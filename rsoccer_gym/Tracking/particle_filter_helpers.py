@@ -127,7 +127,7 @@ def rotate_to_global(robot_orientation, local_x, local_y, robot_rotation):
     return np.array([global_x, global_y, robot_rotation])
 
 def add_move_noise(movement, movement_deviation):
-    movement_abs = np.array([np.abs(movement[0]), np.abs(movement[1]), np.abs(movement[2])])
+    movement_abs = np.abs(movement)
     standard_deviation_vector = movement_deviation*movement_abs
     return np.random.normal(movement, standard_deviation_vector, 3)
 

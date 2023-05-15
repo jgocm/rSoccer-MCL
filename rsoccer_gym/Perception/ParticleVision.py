@@ -157,7 +157,8 @@ class ParticleVision:
         elif -90 < line_dir and line_dir < 0:
             x1, y1 = self.intercept_right_boundary(a, b, field)
             x2, y2 = self.intercept_lower_boundary(a, b, field)
-
+        else:
+            import pdb;pdb.set_trace()
         if self.get_distance(x, y, x1, y1) < self.get_distance(x, y, x2, y2):
             return x1, y1
         else:
@@ -188,7 +189,6 @@ class ParticleVision:
             line_dir = ((line_dir + 180) % 360) - 180
             interception_x, interception_y = self.intercept_field_boundaries(x, y, line_dir, field)
             interception_x, interception_y = self.convert_to_local(interception_x, interception_y, x, y, w)
-            # intercepts.append([interception_x, interception_y])
             intercepts.append(self.convert_xy_to_polar(interception_x, interception_y))
 
         return intercepts

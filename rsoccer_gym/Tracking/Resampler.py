@@ -27,7 +27,7 @@ class Resampler:
     def __init__(self):
         self.initialized = True
 
-    def resample(self, samples, N, algorithm):
+    def resample(self, samples, N, algorithm, data_type):
         """
         Resampling interface, perform resampling using specified method
 
@@ -38,13 +38,13 @@ class Resampler:
         """
 
         if algorithm is ResamplingAlgorithms.MULTINOMIAL:
-            return self.__multinomial(samples, N)
+            return self.__multinomial(samples, N, data_type)
         elif algorithm is ResamplingAlgorithms.RESIDUAL:
-            return self.__residual(samples, N)
+            return self.__residual(samples, N, data_type)
         elif algorithm is ResamplingAlgorithms.STRATIFIED:
-            return self.__stratified(samples, N)
+            return self.__stratified(samples, N, data_type)
         elif algorithm is ResamplingAlgorithms.SYSTEMATIC:
-            return self.__systematic(samples, N)
+            return self.__systematic(samples, N, data_type)
 
         print("Resampling method {} is not specified!".format(algorithm))
 
@@ -178,7 +178,7 @@ class Resampler:
         return new_samples
 
     @staticmethod
-    def __systematic(samples, N):
+    def __systematic(samples, N, data_type):
         """
         Loop over cumulative sum once hence particles should keep same order (however some disappear, other are
         replicated). Variance on number of times a particle will be selected lower than with stratified resampling.
@@ -194,7 +194,7 @@ class Resampler:
         Q = cumulative_sum(weights)
 
         # Only draw one sample
-        u0 = np.random.uniform(1e-10, 1.0 / N, 1)[0]
+        u0 = np.random.uniform(1e-10, Q[-1] / N, 1)[0]
 
         # As long as the number of new samples is insufficient
         n = 0
@@ -203,7 +203,7 @@ class Resampler:
         while n < N:
 
             # Compute u for current particle (deterministic given u0)
-            u = u0 + float(n) / N
+            u = u0 + float(n)*Q[-1] / N
 
             # u increases every loop hence we only move from left to right while iterating Q
 
@@ -214,7 +214,7 @@ class Resampler:
             # Add state sample (uniform weights)
             rnd = np.random.uniform(-1, 1, 3)
             delta = np.array([0.2, 0.2, 15])
-            new_state = samples[m][1:] + (1-samples[m][0])*delta*rnd
+            new_state = samples[m][1:] + (1-samples[m][0]/Q[-1])*delta*rnd
             new_weight = samples[m][0]
             new_sample = np.insert(new_state, 0, new_weight)
             new_samples.append(new_sample)
@@ -223,4 +223,4 @@ class Resampler:
             n += 1
 
         # Return new samples
-        return np.array(new_samples)
+        return np.array(new_samples, dtype=data_type)

@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     # CHOOSE SCENARIO
     scenario = 'sqr'
-    lap = 3
+    lap = 2
 
     # LOAD DATA
     path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
@@ -57,9 +57,11 @@ if __name__ == "__main__":
                                    measurement_weights=[5],
                                    vertical_lines_nr=vertical_lines_nr,
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
-                                   initial_odometry=odometry[0])
+                                   initial_odometry=odometry[0],
+                                   data_type=np.float16)
     robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
-
+    #robot_tracker.initialize_particles_uniform()
+    
     # Init Embedded Vision
     jetson_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
                                         enable_field_detection=True,

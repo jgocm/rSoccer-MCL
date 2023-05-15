@@ -100,7 +100,8 @@ class ParticleFilter:
                  measurement_weights,
                  vertical_lines_nr,
                  resampling_algorithm,
-                 initial_odometry):
+                 initial_odometry,
+                 data_type):
 
         if number_of_particles < 1:
             print(f"Warning: initializing particle filter with number of particles < 1: {number_of_particles}")
@@ -108,6 +109,10 @@ class ParticleFilter:
         # State related settings
         self.state_dimension = len(motion_noise)
         self.set_field_limits(field)
+
+        # Sets precision
+        self.SMALL_VALUE = 1e-7
+        self.data_type = data_type
 
         # Initialize filter settings
         self.n_particles = number_of_particles
@@ -133,22 +138,19 @@ class ParticleFilter:
 
         # Trackings
         self.odometry = Odometry(initial_position=initial_odometry)
-        self.self_localization = Particle()
+        self.self_localization = self.set_particle()
 
         # Detect algorithm failures -> reset
         self.failure = False
 
-        # Sets minimal value
-        self.SMALL_VALUE = 1e-13
-
     def reset_particles(self):
-        states = np.zeros((self.n_particles, self.state_dimension), dtype=np.float16)
-        weights = np.ones(self.n_particles, dtype=np.float16) / self.n_particles
+        states = np.zeros((self.n_particles, self.state_dimension), dtype=self.data_type)
+        weights = np.ones(self.n_particles, dtype=self.data_type) / self.n_particles
         particles = np.column_stack((weights, states))
         return particles
     
     def set_particle(self, weight=0, x=0, y=0, theta=0):
-        return np.array([weight, x, y, theta])
+        return np.array([weight, x, y, theta], dtype=self.data_type)
 
     def propagate_particle(self, particle_state, movement, motion_noise):
         noisy_movement = add_move_noise(movement, motion_noise)
@@ -162,18 +164,18 @@ class ParticleFilter:
         """
 
         radius = np.random.uniform(0, max_distance)
-        direction = np.random.uniform(0, 360)
-        seed_x = position_x + radius*math.cos(direction)
-        seed_y = position_y + radius*math.sin(direction)
+        direction = np.random.uniform(-180, 180)
+        seed_x = position_x + radius*math.cos(np.deg2rad(direction))
+        seed_y = position_y + radius*math.sin(np.deg2rad(direction))
 
         particles = []
         weight = 1.0/self.n_particles
         for i in range(self.n_particles):
             radius = np.random.uniform(0, max_distance)
-            direction = np.random.uniform(0, 360)
-            orientation = np.random.uniform(0, 360)
-            x = seed_x + radius*math.cos(direction)
-            y = seed_y + radius*math.sin(direction)
+            direction = np.random.uniform(-180, 180)
+            orientation = np.random.uniform(-180, 180)
+            x = seed_x + radius*math.cos(np.deg2rad(direction))
+            y = seed_y + radius*math.sin(np.deg2rad(direction))
             particle = self.set_particle(weight, x, y, orientation)
             particles.append(particle)
         
@@ -189,17 +191,13 @@ class ParticleFilter:
         particles = []
         weight = 1.0 / self.n_particles
         for i in range(self.n_particles):
-            particle = Particle(
-                initial_state=[
-                    np.random.uniform(self.x_min, self.x_max),
-                    np.random.uniform(self.y_min, self.y_max),
-                    np.random.uniform(-180, 180)],
-                    weight=weight,
-                    movement_deviation = self.motion_noise)
-
+            x = np.random.uniform(self.x_min, self.x_max)
+            y = np.random.uniform(self.y_min, self.y_max)
+            orientation = np.random.uniform(-180, 180)
+            particle = self.set_particle(weight, x, y, orientation)
             particles.append(particle)
         
-        self.particles = particles
+        self.particles = np.array(particles)
 
     def set_field_limits(self, field = Field()):
         self.field = field
@@ -207,18 +205,6 @@ class ParticleFilter:
         self.x_max = field.x_max
         self.y_min = field.y_min
         self.y_max = field.y_max
-
-    def particles_as_weigthed_samples(self):
-        samples = []
-        for particle in self.particles:
-            samples.append(particle.as_weighted_sample())
-        return samples
-    
-    def particles_as_numpy_arrays(self):
-        samples = []
-        for particle in self.particles:
-            samples.append(particle.as_numpy_array())
-        return np.array(samples)
 
     def get_average_state(self):
         """
@@ -228,20 +214,14 @@ class ParticleFilter:
         """
 
         # Compute sum of all weights
-        sum_weights = 0.0
-        for particle in self.particles:
-            sum_weights += particle[0]
+        sum_weights = np.sum(self.particles[:, 0])
 
         # Compute weighted average
-        avg_x = 0.0
-        avg_y = 0.0
-        avg_theta = 0.0
-        for particle in self.particles:
-            avg_x += particle[1] / sum_weights * particle[0]
-            avg_y += particle[2] / sum_weights * particle[0]
-            avg_theta = limit_angle_degrees(avg_theta + particle[3] / sum_weights * particle[0])
-
-        return [avg_x, avg_y, avg_theta]
+        self_localization = np.average(self.particles[:, 1:], 
+                                       axis=0, 
+                                       weights=self.particles[:, 0]/sum_weights)
+        
+        return limit_angle_from_pose(self_localization)
 
     def get_max_weight(self):
         """
@@ -251,12 +231,14 @@ class ParticleFilter:
         """
         return max(self.particles[:, 0])
 
-    def normalize_weights(self, weights):
+    def normalize_weights(self):
         """
         Normalize all particle weights.
 
         Receives weights as a list
         """
+        weights = self.particles[:, 0]
+
         # Total number of weights
         n_weights = len(weights)
 
@@ -269,7 +251,7 @@ class ParticleFilter:
             self.failure = True
 
             # Set uniform weights
-            return np.ones(n_weights) / n_weights
+            return np.ones(n_weights, dtype=self.data_type) / n_weights
 
         # Return normalized weights
         return weights / self.prior_weights_sum
@@ -360,7 +342,7 @@ class ParticleFilter:
 
     def compute_covariance(self, avg_particle):
         Pxx = 0
-        ux = np.array(avg_particle)
+        ux = avg_particle
         for particle in self.particles:
             diff = particle[1:] - ux
             diff[0] = diff[0]/self.x_max
@@ -375,7 +357,12 @@ class ParticleFilter:
         Checks if resampling is needed
         '''
        
-        if self.average_particle_weight<0.5:
+        #if self.average_particle_weight<0.5:
+        #    return True
+
+        if np.sum(self.particles[:, 0])<self.SMALL_VALUE:
+            # Update to normalized weights        
+            self.particles[:, 0] = np.ones(self.n_particles, dtype=self.data_type) / self.n_particles
             return True
 
         distance = math.sqrt(self.displacement[0]**2 + self.displacement[1]**2)
@@ -398,37 +385,32 @@ class ParticleFilter:
         :param field_points: field_points.
         :param landmarks: Landmark positions.
         """
-
+        
         if len(observations[1])>0:
             self.vision.set_detection_angles_from_list([observations[1][0][1]])
 
-        weights = []
         self.displacement += movement
         for particle in self.particles:
             # Propagate the particle's state according to the current movements
+            # TODO: implement for moving all particles simmutaneously with matrix operations
             particle[1:] = self.propagate_particle(particle[1:], movement, self.motion_noise)
             
             # Compute current particle's weight based on likelihood
-            weight = particle[0] * self.compute_likelihood(observations, particle[1:])
-
-            # Store weight for normalization
-            weights.append(weight)
-
-        # Update to normalized weights
-        self.particles[:, 0] = self.normalize_weights(np.array(weights))
-
-        # Computes average for evaluating current state
-        self.average_particle_weight = self.compute_likelihood(observations, self.get_average_state())
+            particle[0] *= self.compute_likelihood(observations, particle[1:])
 
         # Resample if needed
         if self.needs_resampling():
             self.displacement = np.zeros(3)
-            new_samples = self.resampler.resample(self.particles, 
-                                              self.n_particles, 
-                                              self.resampling_algorithm)
-            self.particles[:, 1:] = new_samples[:, 1:]
-            weights = new_samples[:, 0]
-            self.particles[:, 0] = self.normalize_weights(weights)
+            self.particles = self.resampler.resample(self.particles, 
+                                                     self.n_particles, 
+                                                     self.resampling_algorithm,
+                                                     self.data_type)
+
+        # Update to normalized weights        
+        self.particles[:, 0] = self.normalize_weights()
+
+        # Computes average for evaluating current state
+        self.average_particle_weight = self.compute_likelihood(observations, self.get_average_state())
         
         # Checking if weights are < 1
         if max(self.particles[:, 0])>1: import pdb;pdb.set_trace()
