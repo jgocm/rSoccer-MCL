@@ -27,7 +27,7 @@ class Resampler:
     def __init__(self):
         self.initialized = True
 
-    def resample(self, samples, N, algorithm, data_type):
+    def resample(self, samples, N, algorithm, data_type, confidence):
         """
         Resampling interface, perform resampling using specified method
 
@@ -44,7 +44,7 @@ class Resampler:
         elif algorithm is ResamplingAlgorithms.STRATIFIED:
             return self.__stratified(samples, N, data_type)
         elif algorithm is ResamplingAlgorithms.SYSTEMATIC:
-            return self.__systematic(samples, N, data_type)
+            return self.__systematic(samples, N, data_type, confidence)
 
         print("Resampling method {} is not specified!".format(algorithm))
 
@@ -178,7 +178,7 @@ class Resampler:
         return new_samples
 
     @staticmethod
-    def __systematic(samples, N, data_type):
+    def __systematic(samples, N, data_type, confidence=1):
         """
         Loop over cumulative sum once hence particles should keep same order (however some disappear, other are
         replicated). Variance on number of times a particle will be selected lower than with stratified resampling.
@@ -189,6 +189,13 @@ class Resampler:
         :param N: Number of samples that must be generated.
         :return: Resampled weighted particles.
         """
+        # Compute resampling states' deviation
+        delta = np.array([map(1-confidence), 
+                            map(1-confidence), 
+                            map(1-confidence, 
+                                out_min=15,
+                                out_max=180)])
+
         # Compute cumulative sum
         weights = samples[:, 0]
         Q = cumulative_sum(weights)
@@ -213,7 +220,6 @@ class Resampler:
 
             # Add state sample (uniform weights)
             rnd = np.random.uniform(-1, 1, 3)
-            delta = np.array([0.2, 0.2, 15])
             new_state = samples[m][1:] + (1-samples[m][0]/Q[-1])*delta*rnd
             new_weight = samples[m][0]
             new_sample = np.insert(new_state, 0, new_weight)

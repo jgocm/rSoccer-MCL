@@ -139,6 +139,7 @@ class ParticleFilter:
         # Trackings
         self.odometry = Odometry(initial_position=initial_odometry)
         self.self_localization = self.set_particle()
+        self.total_movement = np.zeros(self.state_dimension)
 
         # Detect algorithm failures -> reset
         self.failure = False
@@ -156,11 +157,14 @@ class ParticleFilter:
         # adds gaussian noise to movement vector
         movement_abs = np.abs(movement)
         standard_deviation_vector = motion_noise*movement_abs
-        noisy_movement = np.random.normal(movement, standard_deviation_vector, (self.n_particles, 3))
+        noisy_movement = np.random.normal(movement, standard_deviation_vector, (self.n_particles, self.state_dimension))
 
         # rotates movement vector to global axis
         thetas = np.deg2rad(self.particles[:, 3])
-        global_xs = noisy_movement[:, 0]*np.cos(thetas) - noisy_movement[:, 1]*np.sin(thetas)
+        try:
+            global_xs = noisy_movement[:, 0]*np.cos(thetas) - noisy_movement[:, 1]*np.sin(thetas)
+        except: 
+            import pdb;pdb.set_trace()
         global_ys = noisy_movement[:, 0]*np.sin(thetas) + noisy_movement[:, 1]*np.cos(thetas)
         global_movement = np.column_stack([global_xs, global_ys, noisy_movement[:, 2]])
 
@@ -369,10 +373,16 @@ class ParticleFilter:
         '''
         Checks if resampling is needed
         '''
-       
-        #if self.average_particle_weight<0.5:
-        #    return True
 
+        self.n_active_particles = int(map(1-self.average_particle_weight,
+                                          in_min=0.01,
+                                          in_max=1,
+                                          out_min=10, 
+                                          out_max=100))
+        if abs(self.n_active_particles-self.n_particles)>15:
+            self.n_particles = self.n_active_particles
+            return True
+        
         if np.sum(self.particles[:, 0])<self.SMALL_VALUE:
             # Update to normalized weights        
             self.particles[:, 0] = np.ones(self.n_particles, dtype=self.data_type) / self.n_particles
@@ -380,7 +390,7 @@ class ParticleFilter:
 
         distance = math.sqrt(self.displacement[0]**2 + self.displacement[1]**2)
         dtheta = self.displacement[2]
-        if distance>1 or dtheta>90:
+        if distance>0.1 or dtheta>45:
             return True
 
         for particle in self.particles:
@@ -391,12 +401,12 @@ class ParticleFilter:
 
     def update(self, movement, observations, step):
         """
-        Process a measurement given the measured robot displacement and resample if needed.
+        Updates particles states and weights, resamples if needed, 
+            and evaluates the current distribuition.
 
-        :param robot_forward_motion: Measured forward robot motion in meters.
-        :param robot_angular_motion: Measured angular robot motion in radians.
-        :param field_points: field_points.
-        :param landmarks: Landmark positions.
+        :param movement: Measured local robot motion in meters and degrees.
+        :param observations: Observed goal and field boundary point.
+        :param step: Current execution iteration.
         """
         
         if len(observations[1])>0:
@@ -404,28 +414,32 @@ class ParticleFilter:
 
         # Propagate the particles' states according to the current movements
         self.displacement += movement
+        self.total_movement += movement
         self.propagate_particles_as_matrix(movement, self.motion_noise)
 
         for particle in self.particles:
             # Compute current particle's weight based on likelihood
             particle[0] *= self.compute_likelihood(observations, particle[1:])
 
-        # Resample if needed
-        if self.needs_resampling():
-            self.displacement = np.zeros(3)
-            self.particles = self.resampler.resample(self.particles, 
-                                                     self.n_particles, 
-                                                     self.resampling_algorithm,
-                                                     self.data_type)
-
         # Update to normalized weights        
         self.particles[:, 0] = self.normalize_weights()
 
+        # TODO: implement particles' evaluation and adaptive number of particles
         # Computes average for evaluating current state
-        self.average_particle_weight = self.compute_likelihood(observations, self.get_average_state())
-        
-        # Checking if weights are < 1
-        if max(self.particles[:, 0])>1: import pdb;pdb.set_trace()
+        alpha = 0.95
+        self.average_particle_weight = alpha*self.average_particle_weight + (1-alpha)*self.compute_likelihood(observations, self.get_average_state())
+
+        # Resample if needed
+        if self.needs_resampling():
+            self.displacement = np.zeros(self.state_dimension)
+            self.particles = self.resampler.resample(self.particles, 
+                                                     self.n_particles, 
+                                                     self.resampling_algorithm,
+                                                     self.data_type,
+                                                     self.average_particle_weight)
+
+            # Update to normalized weights        
+            self.particles[:, 0] = self.normalize_weights()
 
 if __name__=="__main__":
     from rsoccer_gym.ssl.ssl_gym_base import SSLBaseEnv

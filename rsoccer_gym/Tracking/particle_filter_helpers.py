@@ -141,3 +141,11 @@ def limit_angle_degrees(angle):
 def limit_angle_from_pose(pose):
     pose[2] = limit_angle_degrees(pose[2])
     return pose
+
+def map(value, in_min=0.1, in_max=1, out_min=0.18, out_max=4.5):
+    if value <= in_min:
+        return out_min
+    elif value >= in_max:
+        return out_max
+    else:
+        return out_min + (value-in_min)*(out_max-out_min)/(in_max-in_min)

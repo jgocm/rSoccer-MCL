@@ -77,9 +77,9 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
 
     def update(self, robot_position, particles, particle_filter_tracking, odometry_tracking, time_step, env_sleep=False):
         for i in range(self.n_particles):
-            self.particles[i] = Particle()
-            self.particles[i].from_numpy_array(particles[i])
-            if particles[i][0]>1: import pdb;pdb.set_trace()
+            self.particles[i] = Particle(weight=0)
+            if i<len(particles):
+                self.particles[i].from_numpy_array(particles[i])
         self.trackers[0] = Particle(odometry_tracking, 0.2)
         self.trackers[1] = Particle(particle_filter_tracking, 0.2)
         self.step(robot_position)
@@ -91,9 +91,7 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
         self.frame.trackers = self.trackers
 
     def _frame_to_observations(self):
-
         observation = []
-
         return np.array(observation, dtype=np.float32)
 
     def _get_commands(self, actions):
@@ -101,7 +99,6 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
         robot = Robot(yellow=False, id=0, x=x, y=y, theta=theta, v_x=0, v_y=0, v_theta=0)
         self.frame.robots_blue[0] = robot
         self.rsim.reset(self.frame)
-
         return []
 
     def convert_actions(self, action, angle):

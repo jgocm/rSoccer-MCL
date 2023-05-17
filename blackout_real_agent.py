@@ -22,8 +22,8 @@ if __name__ == "__main__":
     vertical_lines_nr = 1
 
     # CHOOSE SCENARIO
-    scenario = 'sqr'
-    lap = 2
+    scenario = 'rnd'
+    lap = 1
 
     # LOAD DATA
     path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
@@ -53,14 +53,14 @@ if __name__ == "__main__":
     # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
                                    field=env.field,
-                                   motion_noise=[0.1, 0.1, 0.01],
+                                   motion_noise=[1, 1, 0.1],
                                    measurement_weights=[5],
                                    vertical_lines_nr=vertical_lines_nr,
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
                                    initial_odometry=odometry[0],
                                    data_type=np.float16)
-    robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
-    #robot_tracker.initialize_particles_uniform()
+    #robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
+    robot_tracker.initialize_particles_uniform()
     
     # Init Embedded Vision
     jetson_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
@@ -97,3 +97,4 @@ if __name__ == "__main__":
                    odometry_particle.state, 
                    time_steps[env.steps])
         env.render()
+        print(robot_tracker.n_particles)
