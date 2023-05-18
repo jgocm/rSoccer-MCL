@@ -122,7 +122,7 @@ class ParticleFilter:
 
         # Metrics for evaluating the particles' quality
         self.prior_weights_sum = 0
-        self.average_particle_weight = 0
+        self.average_particle_weight = 1
 
         # Particle sensors
         self.vision = ParticleVision(vertical_lines_nr=vertical_lines_nr)
@@ -181,7 +181,6 @@ class ParticleFilter:
         """
         Initialize the particles uniformly around a seed position (x, y, orientation). 
         """
-
         radius = np.random.uniform(0, max_distance)
         direction = np.random.uniform(-180, 180)
         seed_x = position_x + radius*math.cos(np.deg2rad(direction))
@@ -376,7 +375,7 @@ class ParticleFilter:
 
         self.n_active_particles = int(map(1-self.average_particle_weight,
                                           in_min=0.01,
-                                          in_max=1,
+                                          in_max=0.6,
                                           out_min=10, 
                                           out_max=100))
         if abs(self.n_active_particles-self.n_particles)>15:
@@ -390,7 +389,7 @@ class ParticleFilter:
 
         distance = math.sqrt(self.displacement[0]**2 + self.displacement[1]**2)
         dtheta = self.displacement[2]
-        if distance>0.1 or dtheta>45:
+        if distance>0.5 or dtheta>45:
             return True
 
         for particle in self.particles:

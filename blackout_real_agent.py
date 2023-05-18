@@ -22,7 +22,7 @@ if __name__ == "__main__":
     vertical_lines_nr = 1
 
     # CHOOSE SCENARIO
-    scenario = 'rnd'
+    scenario = 'sqr'
     lap = 1
 
     # LOAD DATA
@@ -59,8 +59,8 @@ if __name__ == "__main__":
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
                                    initial_odometry=odometry[0],
                                    data_type=np.float16)
-    #robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
-    robot_tracker.initialize_particles_uniform()
+    robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
+    #robot_tracker.initialize_particles_uniform()
     
     # Init Embedded Vision
     jetson_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
