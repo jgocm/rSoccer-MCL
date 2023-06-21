@@ -94,9 +94,10 @@ if __name__ == "__main__":
         # update step:    
         final_time = time.time()
         dt = final_time-start_time
-        avg_fps = 0.5*avg_fps + 0.5*1/dt
+        avg_fps = 0.5*avg_fps + 0.5*(1/dt)
         avg_particle = robot_tracker.get_average_state()
-        print(f'Nr Particles: {robot_tracker.n_particles} | Current processing time: {dt} | Avg FPS: {avg_fps}')
+        #print(f'Nr Particles: {robot_tracker.n_particles} | Current processing time: {dt} | Avg FPS: {avg_fps}')
+        print(f'avg particle: {robot_tracker.get_average_state()} | ground-truth: {position[steps]}')
 
         # debug
         if debug:
