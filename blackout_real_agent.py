@@ -6,6 +6,7 @@ from rsoccer_gym.Tracking import ResamplingAlgorithms
 from rsoccer_gym.Plotter.Plotter import RealTimePlotter
 from rsoccer_gym.Perception.jetson_vision import JetsonVision
 from rsoccer_gym.Tracking.particle_filter_helpers import *
+from rsoccer_gym.Utils.mcl_communication import *
 
 
 def get_image_from_frame_nr(path_to_images_folder, frame_nr):
