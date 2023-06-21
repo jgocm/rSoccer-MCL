@@ -2,7 +2,6 @@ import tensorrt as trt
 import numpy as np
 import time
 import random
-import trt_common
 import colorsys
 import cv2
 import os
@@ -201,6 +200,7 @@ class DetectNet():
         return self
 
 if __name__ == "__main__":
+    import trt_common
 
     DISPLAY_WINDOW = True
     WINDOW_NAME = 'Object Detection'
@@ -254,5 +254,8 @@ if __name__ == "__main__":
     # RELEASE WINDOW AND DESTROY
     cap.release()
     cv2.destroyAllWindows()
+
+else:
+    from rsoccer_gym.Perception import trt_common
 
 

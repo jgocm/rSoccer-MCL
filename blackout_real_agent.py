@@ -51,22 +51,22 @@ if __name__ == "__main__":
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
                                    initial_odometry=odometry[0],
                                    data_type=np.float16)
-    #robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
-    robot_tracker.initialize_particles_uniform()
+    robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
+    #robot_tracker.initialize_particles_uniform()
     
     # Init Embedded Vision
     jetson_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
-                                        enable_field_detection=True,
-                                        enable_randomized_observations=True)
+                                 enable_field_detection=True,
+                                 enable_randomized_observations=True)
     jetson_vision.jetson_cam.setPoseFrom3DModel(170, 106.8)
     #self.embedded_vision.jetson_cam.setPoseFrom3DModel(170, 107.2)
 
     # Init Odometry
     odometry_particle = Particle(initial_state=initial_position,
-                                movement_deviation=[0, 0, 0])
+                                 movement_deviation=[0, 0, 0])
     
     avg_fps = 0
-    steps=0
+    steps = 0
 
     for frame_nr in data.frames:    
         # start_time
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         odometry_particle.move(movement)
 
         # update step:    
-        steps+=1
+        steps += 1
         final_time = time.time()
         dt = final_time-start_time
         avg_fps = 0.5*avg_fps + 0.5*1/dt

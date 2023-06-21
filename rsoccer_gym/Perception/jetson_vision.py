@@ -44,6 +44,7 @@ class JetsonVision():
                 )
             self.object_detector.loadModel()
             self.has_object_detection = True
+
         except:
             print("TensorRT not available, not running object detection!")
             self.has_object_detection = False
@@ -262,6 +263,7 @@ class JetsonVision():
         else:
             class_id, score, xmin, xmax, ymin, ymax = 2, has_goal, goal_bounding_box[0], goal_bounding_box[1], goal_bounding_box[2], goal_bounding_box[3]
             detection = [class_id, score, xmin, xmax, ymin, ymax]
+
             if score>0.5:
                 detections.append(detection)
 
