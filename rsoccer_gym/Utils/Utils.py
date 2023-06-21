@@ -1,5 +1,4 @@
 import numpy as np
-import gym
 
 # Base on baselines implementation
 class OrnsteinUhlenbeckAction(object):

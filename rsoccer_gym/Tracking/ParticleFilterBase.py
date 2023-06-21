@@ -382,7 +382,7 @@ class ParticleFilter:
                                           in_max=0.6,
                                           out_min=10, 
                                           out_max=100))
-        if abs(self.n_active_particles-self.n_particles)>15:
+        if abs(self.n_active_particles-self.n_particles)>5:
             self.n_particles = self.n_active_particles
             return True
         

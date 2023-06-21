@@ -1,10 +1,9 @@
-import gym
 import numpy as np
 import cv2
 from rsoccer_gym.Tracking.ParticleFilterBase import ParticleFilter, Particle
 from rsoccer_gym.Tracking import ResamplingAlgorithms
-from rsoccer_gym.Plotter.Plotter import RealTimePlotter
 from rsoccer_gym.Perception.jetson_vision import JetsonVision
+from rsoccer_gym.Perception.entities import *
 from rsoccer_gym.Tracking.particle_filter_helpers import *
 
 
@@ -15,18 +14,18 @@ def get_image_from_frame_nr(path_to_images_folder, frame_nr):
 
 if __name__ == "__main__":
     import os
+    import time
     from rsoccer_gym.Utils.load_localization_data import Read
     cwd = os.getcwd()
 
-    n_particles = 200
+    n_particles = 100
     vertical_lines_nr = 1
 
     # CHOOSE SCENARIO
-    scenario = 'igs'
-    lap = 3
+    scenarios = ['rnd_01', 'sqr_02', 'igs_03']
 
     # LOAD DATA
-    path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
+    path = f'/home/vision-blackout/ssl-navigation-dataset-jetson/data/{scenarios[0]}'
     path_to_log = path+'/logs/processed.csv'
     data = Read(path_to_log, is_raw=False, degrees=False)
     time_steps = data.get_timesteps()
@@ -43,24 +42,17 @@ if __name__ == "__main__":
     seed_radius = 1
     initial_position[2] = np.degrees(initial_position[2])
 
-    # Using VSS Single Agent env
-    env = gym.make('SSLVisionBlackout-v0',
-                   n_particles = n_particles,
-                   initial_position = [initial_position[0], initial_position[1], initial_position[2]],
-                   time_step=data.get_timesteps_average())
-    env.reset()
-
     # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
-                                   field=env.field,
+                                   field=Field(),
                                    motion_noise=[0.2, 0.2, 0.05],
                                    measurement_weights=[1],
                                    vertical_lines_nr=vertical_lines_nr,
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
                                    initial_odometry=odometry[0],
                                    data_type=np.float16)
-    robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
-    #robot_tracker.initialize_particles_uniform()
+    #robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
+    robot_tracker.initialize_particles_uniform()
     
     # Init Embedded Vision
     jetson_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
@@ -72,29 +64,34 @@ if __name__ == "__main__":
     # Init Odometry
     odometry_particle = Particle(initial_state=initial_position,
                                 movement_deviation=[0, 0, 0])
-    for frame_nr in data.frames:      
+    
+    avg_fps = 0
+    steps=0
+
+    for frame_nr in data.frames:    
+        # start_time
+        start_time = time.time()
+
         # update odometry:
-        robot_tracker.odometry.update(odometry[env.steps])
+        robot_tracker.odometry.update(odometry[steps])
         movement = limit_angle_from_pose(robot_tracker.odometry.rad2deg(robot_tracker.odometry.movement))
 
         # capture frame:
-        img, has_goal, goal_bbox = get_image_from_frame_nr(path, frame_nr), has_goals[env.steps], goals[env.steps]
+        img, has_goal, goal_bbox = get_image_from_frame_nr(path, frame_nr), has_goals[steps], goals[steps]
 
-        # make observations:    
+        # make observations:
         _, _, _, _, particle_filter_observations = jetson_vision.process_from_log(src = img,
-                                                                                  timestamp = data.timestamps[env.steps],
+                                                                                  timestamp = data.timestamps[steps],
                                                                                   has_goal = has_goal,
                                                                                   goal_bounding_box = goal_bbox)
 
         # compute particle filter tracking:    
-        robot_tracker.update(movement, particle_filter_observations, env.steps)
+        robot_tracker.update(movement, particle_filter_observations, steps)
         odometry_particle.move(movement)
 
-        # update visualization:    
-        env.update(position[env.steps], 
-                   robot_tracker.particles, 
-                   robot_tracker.get_average_state(),
-                   odometry_particle.state, 
-                   time_steps[env.steps])
-        env.render()
-        print(robot_tracker.n_particles)
+        # update step:    
+        steps+=1
+        final_time = time.time()
+        dt = final_time-start_time
+        avg_fps = 0.5*avg_fps + 0.5*1/dt
+        print(f'Nr Particles: {robot_tracker.n_particles} | Current processing time: {dt} | Avg FPS: {avg_fps}')

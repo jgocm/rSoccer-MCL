@@ -98,12 +98,12 @@ class Goal():
 class Field():
     def __init__(
                 self,
-                field_width = 3.760,
-                field_length = 5.640,
-                penalty_area_width = 2.000,
-                penalty_area_depth = 1.000,
-                center_radius = 1.000,
-                boundary_width = 0.180,
+                field_length = 7.800,
+                field_width = 5.400,
+                penalty_area_width = 1.800,
+                penalty_area_depth = 0.900,
+                center_radius = 0.500,
+                boundary_width = 0.300,
                 line_thickness = 0.020
                 ):
                 
