@@ -7,8 +7,8 @@ class FieldDetection():
             self,
             vertical_lines_offset = 320,
             vertical_lines_nr = 1,
-            min_line_length = 1,
-            max_line_length = 20,
+            min_line_length = 3,
+            max_line_length = 50,
             min_wall_length = 10
             ):
         # DEFINE COLORS:
@@ -70,7 +70,7 @@ class FieldDetection():
     
     def isGreen(self, src):
         blue, green, red = src
-        if green > 90 and red < 110:
+        if green > 90 and red <= 130:
             return True
         else:
             return False     
@@ -154,7 +154,10 @@ class FieldDetection():
             line_points = []
             for pixel_y in range(height-1, 0, -1):
                 pixel = src[pixel_y, line_x]
-                if not self.isBlack(pixel):
+                if self.isBlack(pixel):
+                    line_points = []
+                    break
+                else:
                     # check white->green border
                     if not self.isGreen(pixel) and field_line == False:
                         field_line = True
@@ -162,7 +165,7 @@ class FieldDetection():
                     elif self.isGreen(pixel) and field_line == True:
                         field_line = False
                         # check white line length (width)
-                        if len(line_points)>self.min_line_length and len(line_points)<self.max_line_length:
+                        if len(line_points)>=self.min_line_length and len(line_points)<=self.max_line_length:
                             line_y = [point[0] for point in line_points]
                             point = int(np.mean(line_y)), line_x
                             field_line_points.append(point)

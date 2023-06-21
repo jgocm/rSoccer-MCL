@@ -18,12 +18,12 @@ if __name__ == "__main__":
     from rsoccer_gym.Utils.load_localization_data import Read
     cwd = os.getcwd()
 
-    n_particles = 100
+    n_particles = 200
     vertical_lines_nr = 1
 
     # CHOOSE SCENARIO
-    scenario = 'sqr'
-    lap = 1
+    scenario = 'igs'
+    lap = 3
 
     # LOAD DATA
     path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
@@ -53,8 +53,8 @@ if __name__ == "__main__":
     # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
                                    field=env.field,
-                                   motion_noise=[1, 1, 0.1],
-                                   measurement_weights=[5],
+                                   motion_noise=[0.2, 0.2, 0.05],
+                                   measurement_weights=[1],
                                    vertical_lines_nr=vertical_lines_nr,
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
                                    initial_odometry=odometry[0],

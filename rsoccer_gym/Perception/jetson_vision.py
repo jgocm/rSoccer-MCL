@@ -173,9 +173,10 @@ class JetsonVision():
     
     def trackFieldPoints(self, src, boundary_points, line_points):
         boundary_ground_points = self.trackGroundPoints(src, boundary_points)
+        #boundary_ground_points = []
         
         # not using field lines detection
-        # line_ground_points = self.trackGroundPoints(src, line_points)
+        #line_ground_points = self.trackGroundPoints(src, line_points)
         line_ground_points = []
         
         return boundary_ground_points, line_ground_points
@@ -292,32 +293,41 @@ if __name__ == "__main__":
 
     import time
 
+    def get_image_from_frame_nr(path_to_images_folder, frame_nr):
+        dir = path_to_images_folder+f'/cam/{frame_nr}.png'
+        img = cv2.imread(dir)
+        return img
+
     cwd = os.getcwd()
 
-    frame_nr = 2200
-    quadrado_nr = 1
+    frame_nr = 50
+    scenario = 'igs'
+    lap = 1
 
-    vision = JetsonVision(
-                        vertical_lines_offset=320,
-                        enable_randomized_observations=True,
-                        debug=True)
+    vision = JetsonVision(vertical_lines_offset=100,
+                          vertical_lines_nr=1,
+                          enable_randomized_observations=True,
+                          debug=True,
+                          min_wall_length=5)
     vision.jetson_cam.setPoseFrom3DModel(170, 106.7)
 
     while True:
-        dir = cwd + f"/localization_data/quadrado{quadrado_nr}/{frame_nr}.jpg"
+        dir = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
 
         WINDOW_NAME = "BOUNDARY DETECTION"
-        img = cv2.imread(dir)
+        img = get_image_from_frame_nr(dir, frame_nr)
         height, width = img.shape[0], img.shape[1]
         _, _, _, _, particle_filter_observations = vision.process(img, timestamp=time.time())
         boundary_ground_points, line_ground_points = particle_filter_observations
         for point in boundary_ground_points:
             point = vision.jetson_cam.xyToPolarCoordinates(point[0], point[1])
             print(point)
-        cv2.imshow(WINDOW_NAME, img)
+        cv2.imshow(WINDOW_NAME, img[:300, :])
         key = cv2.waitKey(-1) & 0xFF
         if key == ord('q'):
             break
+        if key == ord('s'):
+            cv2.imwrite(WINDOW_NAME + '.png', img[:300, :])
         else:
             frame_nr=frame_nr+1
 

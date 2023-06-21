@@ -122,7 +122,7 @@ class ParticleFilter:
 
         # Metrics for evaluating the particles' quality
         self.prior_weights_sum = 0
-        self.average_particle_weight = 1
+        self.average_particle_weight = 1/number_of_particles
 
         # Particle sensors
         self.vision = ParticleVision(vertical_lines_nr=vertical_lines_nr)
@@ -198,6 +198,10 @@ class ParticleFilter:
             particles.append(particle)
         
         self.particles = np.array(particles)
+
+        robot_area = np.pi*max_distance*max_distance
+        total_area = (self.x_max-self.x_min)*(self.y_max-self.y_min)
+        self.average_particle_weight = 1 - robot_area/total_area
         
     def initialize_particles_uniform(self):
         """
@@ -372,7 +376,7 @@ class ParticleFilter:
         '''
         Checks if resampling is needed
         '''
-
+        
         self.n_active_particles = int(map(1-self.average_particle_weight,
                                           in_min=0.01,
                                           in_max=0.6,
@@ -411,7 +415,7 @@ class ParticleFilter:
         if len(observations[1])>0:
             self.vision.set_detection_angles_from_list([observations[1][0][1]])
 
-        # Propagate the particles' states according to the current movements
+        # Propagate the states according to the current movement
         self.displacement += movement
         self.total_movement += movement
         self.propagate_particles_as_matrix(movement, self.motion_noise)
@@ -423,7 +427,6 @@ class ParticleFilter:
         # Update to normalized weights        
         self.particles[:, 0] = self.normalize_weights()
 
-        # TODO: implement particles' evaluation and adaptive number of particles
         # Computes average for evaluating current state
         alpha = 0.95
         self.average_particle_weight = alpha*self.average_particle_weight + (1-alpha)*self.compute_likelihood(observations, self.get_average_state())
