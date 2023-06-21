@@ -18,6 +18,7 @@ if __name__ == "__main__":
     from rsoccer_gym.Utils.load_localization_data import Read
     cwd = os.getcwd()
 
+    debug = True
     n_particles = 100
     vertical_lines_nr = 1
 
@@ -57,7 +58,10 @@ if __name__ == "__main__":
     # Init Embedded Vision
     jetson_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
                                  enable_field_detection=True,
-                                 enable_randomized_observations=True)
+                                 enable_randomized_observations=True,
+                                 score_threshold=0.2,
+                                 draw=debug,
+                                 debug=debug)
     jetson_vision.jetson_cam.setPoseFrom3DModel(170, 106.8)
     #self.embedded_vision.jetson_cam.setPoseFrom3DModel(170, 107.2)
 
@@ -80,18 +84,27 @@ if __name__ == "__main__":
         img, has_goal, goal_bbox = get_image_from_frame_nr(path, frame_nr), has_goals[steps], goals[steps]
 
         # make observations:
-        _, _, _, _, particle_filter_observations = jetson_vision.process_from_log(src = img,
-                                                                                  timestamp = data.timestamps[steps],
-                                                                                  has_goal = has_goal,
-                                                                                  goal_bounding_box = goal_bbox)
+        _, _, _, _, particle_filter_observations = jetson_vision.process(src = img,
+                                                                         timestamp = data.timestamps[steps])
 
         # compute particle filter tracking:    
         robot_tracker.update(movement, particle_filter_observations, steps)
         odometry_particle.move(movement)
 
         # update step:    
-        steps += 1
         final_time = time.time()
         dt = final_time-start_time
         avg_fps = 0.5*avg_fps + 0.5*1/dt
+        avg_particle = robot_tracker.get_average_state()
         print(f'Nr Particles: {robot_tracker.n_particles} | Current processing time: {dt} | Avg FPS: {avg_fps}')
+
+        # debug
+        if debug:
+            cv2.imshow('debug', img)
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                break
+        
+        steps += 1
+
+    cv2.destroyAllWindows()

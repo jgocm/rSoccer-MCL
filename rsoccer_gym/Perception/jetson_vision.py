@@ -232,10 +232,12 @@ class JetsonVision():
         self.trackObjects(detections)        
 
         # compute field points relative positions
-        particle_filter_observations = self.trackFieldPoints(src, boundary_points, line_points)
+        boundary_ground_points, line_ground_points = self.trackFieldPoints(src, boundary_points, line_points)
+
+        # parse field detections for particle filter observations
+        particle_filter_observations = self.current_frame.has_goal, boundary_ground_points, line_ground_points
 
         processed_vision = self.current_frame, self.tracked_ball, self.tracked_goal, self.tracked_robot, particle_filter_observations
-
         return processed_vision
 
     def process_from_log(self, src, timestamp, has_goal, goal_bounding_box):
