@@ -1,6 +1,5 @@
 import socket
 import numpy as np
-from particles_pb2 import *
 
 class ParticlesReceiver():
     def __init__(self,
@@ -11,10 +10,10 @@ class ParticlesReceiver():
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_sock.bind(('', self.port))
         self.udp_sock.settimeout(0)
-        self.msg = ParticleList()
+        self.msg = pb.ParticleList()
 
     def recvMCLMessage(self):
-        msg = ParticleList()
+        msg = pb.ParticleList()
 
         # multiple messages are received so read until messages are no longer available
         has_msg = False
@@ -40,10 +39,10 @@ class ParticlesSender():
         self.address = receiver_address
         self.port = port
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.msg = ParticleList()
+        self.msg = pb.ParticleList()
 
     def setMCLMessage(self, particles):
-        self.msg = ParticleList()
+        self.msg = pb.ParticleList()
         for particle in particles:
             p = self.msg.particles.add()
             p.w, p.x, p.y, p.theta = particle
@@ -74,11 +73,13 @@ def run_sender():
         UDP.sendMCLMessage()
 
 if __name__ == "__main__":
+    import particles_pb2 as pb
+
 
     is_receiver = False
 
     if is_receiver: run_receiver()
     else: run_sender()
 
-
-
+else:
+    from rsoccer_gym.Utils import particles_pb2 as pb
