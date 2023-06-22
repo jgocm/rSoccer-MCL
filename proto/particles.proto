@@ -7,6 +7,16 @@ message Particle {
     float theta = 4;
 }
 
-message ParticleList {
-    repeated Particle particles = 1;
+message Position {
+    float x = 1;
+    float y = 2;
+    float theta = 3;
+}
+
+message MCLMessage {
+    Position robot_position = 1;
+    repeated Particle particles = 2;
+    Position mcl_position = 3;
+    Position odometry_position = 4;
+    float time_steps = 5;
 }

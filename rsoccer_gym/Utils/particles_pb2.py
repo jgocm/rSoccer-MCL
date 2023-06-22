@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='particles.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x0fparticles.proto\":\n\x08Particle\x12\t\n\x01w\x18\x01 \x01(\x02\x12\t\n\x01x\x18\x02 \x01(\x02\x12\t\n\x01y\x18\x03 \x01(\x02\x12\r\n\x05theta\x18\x04 \x01(\x02\",\n\x0cParticleList\x12\x1c\n\tparticles\x18\x01 \x03(\x0b\x32\t.Particleb\x06proto3')
+  serialized_pb=_b('\n\x0fparticles.proto\":\n\x08Particle\x12\t\n\x01w\x18\x01 \x01(\x02\x12\t\n\x01x\x18\x02 \x01(\x02\x12\t\n\x01y\x18\x03 \x01(\x02\x12\r\n\x05theta\x18\x04 \x01(\x02\"/\n\x08Position\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\x12\r\n\x05theta\x18\x03 \x01(\x02\"\xa8\x01\n\nMCLMessage\x12!\n\x0erobot_position\x18\x01 \x01(\x0b\x32\t.Position\x12\x1c\n\tparticles\x18\x02 \x03(\x0b\x32\t.Particle\x12\x1f\n\x0cmcl_position\x18\x03 \x01(\x0b\x32\t.Position\x12$\n\x11odometry_position\x18\x04 \x01(\x0b\x32\t.Position\x12\x12\n\ntime_steps\x18\x05 \x01(\x02\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -78,17 +78,31 @@ _PARTICLE = _descriptor.Descriptor(
 )
 
 
-_PARTICLELIST = _descriptor.Descriptor(
-  name='ParticleList',
-  full_name='ParticleList',
+_POSITION = _descriptor.Descriptor(
+  name='Position',
+  full_name='Position',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='particles', full_name='ParticleList.particles', index=0,
-      number=1, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
+      name='x', full_name='Position.x', index=0,
+      number=1, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='y', full_name='Position.y', index=1,
+      number=2, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='theta', full_name='Position.theta', index=2,
+      number=3, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -105,12 +119,75 @@ _PARTICLELIST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=79,
-  serialized_end=123,
+  serialized_end=126,
 )
 
-_PARTICLELIST.fields_by_name['particles'].message_type = _PARTICLE
+
+_MCLMESSAGE = _descriptor.Descriptor(
+  name='MCLMessage',
+  full_name='MCLMessage',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='robot_position', full_name='MCLMessage.robot_position', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='particles', full_name='MCLMessage.particles', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='mcl_position', full_name='MCLMessage.mcl_position', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='odometry_position', full_name='MCLMessage.odometry_position', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='time_steps', full_name='MCLMessage.time_steps', index=4,
+      number=5, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=129,
+  serialized_end=297,
+)
+
+_MCLMESSAGE.fields_by_name['robot_position'].message_type = _POSITION
+_MCLMESSAGE.fields_by_name['particles'].message_type = _PARTICLE
+_MCLMESSAGE.fields_by_name['mcl_position'].message_type = _POSITION
+_MCLMESSAGE.fields_by_name['odometry_position'].message_type = _POSITION
 DESCRIPTOR.message_types_by_name['Particle'] = _PARTICLE
-DESCRIPTOR.message_types_by_name['ParticleList'] = _PARTICLELIST
+DESCRIPTOR.message_types_by_name['Position'] = _POSITION
+DESCRIPTOR.message_types_by_name['MCLMessage'] = _MCLMESSAGE
 
 Particle = _reflection.GeneratedProtocolMessageType('Particle', (_message.Message,), dict(
   DESCRIPTOR = _PARTICLE,
@@ -119,12 +196,19 @@ Particle = _reflection.GeneratedProtocolMessageType('Particle', (_message.Messag
   ))
 _sym_db.RegisterMessage(Particle)
 
-ParticleList = _reflection.GeneratedProtocolMessageType('ParticleList', (_message.Message,), dict(
-  DESCRIPTOR = _PARTICLELIST,
+Position = _reflection.GeneratedProtocolMessageType('Position', (_message.Message,), dict(
+  DESCRIPTOR = _POSITION,
   __module__ = 'particles_pb2'
-  # @@protoc_insertion_point(class_scope:ParticleList)
+  # @@protoc_insertion_point(class_scope:Position)
   ))
-_sym_db.RegisterMessage(ParticleList)
+_sym_db.RegisterMessage(Position)
+
+MCLMessage = _reflection.GeneratedProtocolMessageType('MCLMessage', (_message.Message,), dict(
+  DESCRIPTOR = _MCLMESSAGE,
+  __module__ = 'particles_pb2'
+  # @@protoc_insertion_point(class_scope:MCLMessage)
+  ))
+_sym_db.RegisterMessage(MCLMessage)
 
 
 # @@protoc_insertion_point(module_scope)
