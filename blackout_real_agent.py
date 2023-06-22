@@ -19,8 +19,8 @@ if __name__ == "__main__":
     from rsoccer_gym.Utils.load_localization_data import Read
     cwd = os.getcwd()
 
-    debug = True
-    n_particles = 100
+    debug = False
+    n_particles = 200
     vertical_lines_nr = 1
 
     # CHOOSE SCENARIO
@@ -44,9 +44,13 @@ if __name__ == "__main__":
     seed_radius = 1
     initial_position[2] = np.degrees(initial_position[2])
 
+    # SET FIELD WITH RC LIMITS
+    rc_field = Field()
+    rc_field.redefineFieldLimits(x_max=4.5, y_max=3, x_min=-0.3, y_min=-3)
+
     # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
-                                   field=Field(),
+                                   field=rc_field,
                                    motion_noise=[0.2, 0.2, 0.05],
                                    measurement_weights=[1],
                                    vertical_lines_nr=vertical_lines_nr,
@@ -87,7 +91,7 @@ if __name__ == "__main__":
         # capture frame:
         img, has_goal, goal_bbox = get_image_from_frame_nr(path, frame_nr), has_goals[steps], goals[steps]
 
-        # make observations:
+        # make observations:    
         _, _, _, _, particle_filter_observations = jetson_vision.process(src = img,
                                                                          timestamp = data.timestamps[steps])
 
@@ -108,9 +112,15 @@ if __name__ == "__main__":
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
                 break
+            elif key == ord('p'):
+                import pdb;pdb.set_trace()
 
-            UDP.setMCLMessage(robot_tracker.particles.astype(float))
-            UDP.sendMCLMessage()
+        UDP.setMCLMessage(position[steps].astype(float),
+                            robot_tracker.particles.astype(float),
+                            robot_tracker.get_average_state().astype(float),
+                            odometry_particle.state,
+                            steps)
+        UDP.sendMCLMessage()
         
         steps += 1
 

@@ -10,10 +10,10 @@ class ParticlesReceiver():
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_sock.bind(('', self.port))
         self.udp_sock.settimeout(0)
-        self.msg = pb.ParticleList()
+        self.msg = pb.MCLMessage()
 
     def recvMCLMessage(self):
-        msg = pb.ParticleList()
+        msg = pb.MCLMessage()
 
         # multiple messages are received so read until messages are no longer available
         has_msg = False
@@ -44,7 +44,7 @@ class ParticlesSender():
         self.address = receiver_address
         self.port = port
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.msg = pb.ParticleList()
+        self.msg = pb.MCLMessage()
 
     def setRobotPosition(self, robot_position):
         self.msg.robot_position.x = robot_position[0]
@@ -67,7 +67,7 @@ class ParticlesSender():
             p.w, p.x, p.y, p.theta = particle
 
     def setMCLMessage(self, robot_position, particles, mcl_position, odometry_position, time_steps):
-        self.msg = pb.ParticleList()
+        self.msg = pb.MCLMessage()
         self.setRobotPosition(robot_position)
         self.setParticles(particles)
         self.setMCLPosition(mcl_position)

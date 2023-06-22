@@ -240,7 +240,7 @@ class JetsonVision():
         processed_vision = self.current_frame, self.tracked_ball, self.tracked_goal, self.tracked_robot, particle_filter_observations
         return processed_vision
 
-    def process_from_log(self, src, timestamp, has_goal, goal_bounding_box):
+    def process_from_log(self, src, timestamp, has_goal, goal_bounding_box, use_object_detection = False):
         """
         Detects and tracks objects, field lines and boundary points
 
@@ -258,6 +258,8 @@ class JetsonVision():
         # init
         self.current_frame = Frame(timestamp=timestamp, input_source=src)
         detections, boundary_points, line_points = [], [], []
+
+        self.has_object_detection = use_object_detection
 
         # CNN-based (SSD MobileNetv2) object detection ~30ms
         if self.has_object_detection:
