@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import time
 from rsoccer_gym.Perception.ParticleVision import ParticleVision
 from rsoccer_gym.Tracking.Resampler import Resampler
 from rsoccer_gym.Perception.entities import Field
@@ -141,8 +142,9 @@ class ParticleFilter:
         self.self_localization = self.set_particle()
         self.total_movement = np.zeros(self.state_dimension)
 
-        # Detect algorithm failures -> reset
+        # Detect algorithm failures/relocalization
         self.failure = False
+        self.relocalization = False
 
     def reset_particles(self):
         states = np.zeros((self.n_particles, self.state_dimension), dtype=self.data_type)
@@ -271,6 +273,7 @@ class ParticleFilter:
         if self.prior_weights_sum < self.SMALL_VALUE:
             print(f"Weight normalization failed: sum of all weights is {self.SMALL_VALUE} (weights will be reinitialized)")
             self.failure = True
+            self.average_particle_weight = 1/self.n_particles
 
             # Set uniform weights
             return np.ones(n_weights, dtype=self.data_type) / n_weights
@@ -411,6 +414,8 @@ class ParticleFilter:
         :param observations: Observed goal and field boundary point.
         :param step: Current execution iteration.
         """
+        t0 = time.time()
+        self.failure = False
         
         if len(observations[1])>0:
             self.vision.set_detection_angles_from_list([observations[1][0][1]])
@@ -419,17 +424,22 @@ class ParticleFilter:
         self.displacement += movement
         self.total_movement += movement
         self.propagate_particles_as_matrix(movement, self.motion_noise)
+        t1 = time.time()
 
         for particle in self.particles:
             # Compute current particle's weight based on likelihood
             particle[0] *= self.compute_likelihood(observations, particle[1:])
+        t2 = time.time()
 
         # Update to normalized weights        
         self.particles[:, 0] = self.normalize_weights()
+        t3 = time.time()
 
         # Computes average for evaluating current state
+        avg_particle_state = self.get_average_state()
         alpha = 0.95
-        self.average_particle_weight = alpha*self.average_particle_weight + (1-alpha)*self.compute_likelihood(observations, self.get_average_state())
+        self.average_particle_weight = alpha*self.average_particle_weight + (1-alpha)*self.compute_likelihood(observations, avg_particle_state)
+        t4 = time.time()
 
         # Resample if needed
         if self.needs_resampling():
@@ -442,6 +452,9 @@ class ParticleFilter:
 
             # Update to normalized weights        
             self.particles[:, 0] = self.normalize_weights()
+        t5 = time.time()
+        
+        return self.failure, (self.average_particle_weight>0.99), avg_particle_state, [t5-t0, t5-t4, t4-t3, t3-t2, t2-t1, t1-t0]
 
 if __name__=="__main__":
     from rsoccer_gym.ssl.ssl_gym_base import SSLBaseEnv

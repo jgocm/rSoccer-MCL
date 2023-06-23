@@ -179,8 +179,10 @@ class DetectNet():
             ymax = int(box[3] * capture_height)
             detection = (class_id, score, xmin, xmax, ymin, ymax)
 
-            # REMOVE BIG OBJECTS (USUALLY FALSE-POSITIVES)
-            if (xmax-xmin)<0.97*capture_width and (ymax-ymin)<0.97*capture_height:
+            # REMOVE BIG OBJECTS AND BOXES ON THE Y BORDERS (USUALLY FALSE-POSITIVES)
+            if (xmax-xmin)<0.97*capture_width \
+                and (ymax-ymin)<0.97*capture_height \
+                and ymax<0.9*capture_height and ymin>(1-0.9)*capture_height:
                 detections.append(detection)
             if self.draw:
                 caption = "{0}({1:.2f})".format(self.labels[class_id - 1], score)

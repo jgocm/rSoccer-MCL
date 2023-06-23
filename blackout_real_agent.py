@@ -7,6 +7,11 @@ from rsoccer_gym.Perception.entities import *
 from rsoccer_gym.Tracking.particle_filter_helpers import *
 from rsoccer_gym.Utils.mcl_communication import *
 
+def serialize_processing_times_to_log(frame_nr, n_particles, total, vision, localization):
+    data = [frame_nr, n_particles, total, \
+            vision[0], vision[1], vision[2], vision[3], \
+            localization[0], localization[1], localization[2], localization[3], localization[4], localization[5]]
+    return data
 
 def get_image_from_frame_nr(path_to_images_folder, frame_nr):
     dir = path_to_images_folder+f'/cam/{frame_nr}.png'
@@ -16,18 +21,20 @@ def get_image_from_frame_nr(path_to_images_folder, frame_nr):
 if __name__ == "__main__":
     import os
     import time
+    import csv
     from rsoccer_gym.Utils.load_localization_data import Read
     cwd = os.getcwd()
 
-    debug = False
+    debug = True
     n_particles = 200
     vertical_lines_nr = 1
 
     # CHOOSE SCENARIO
-    scenarios = ['rnd_01', 'sqr_02', 'igs_03']
+    scenarios = ['rnd_01', 'sqr_02', 'igs_03', 'tst_01']
+    scenario = scenarios[2]
 
     # LOAD DATA
-    path = f'/home/vision-blackout/ssl-navigation-dataset-jetson/data/{scenarios[0]}'
+    path = f'/home/vision-blackout/ssl-navigation-dataset-jetson/data/{scenario}'
     path_to_log = path+'/logs/processed.csv'
     data = Read(path_to_log, is_raw=False, degrees=False)
     time_steps = data.get_timesteps()
@@ -46,12 +53,12 @@ if __name__ == "__main__":
 
     # SET FIELD WITH RC LIMITS
     rc_field = Field()
-    rc_field.redefineFieldLimits(x_max=4.5, y_max=3, x_min=-0.3, y_min=-3)
+    rc_field.redefineFieldLimits(x_max=4.2, y_max=3, x_min=-0.3, y_min=-3)
 
     # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
                                    field=rc_field,
-                                   motion_noise=[0.2, 0.2, 0.05],
+                                   motion_noise=[0.5, 0.5, 0.01],
                                    measurement_weights=[1],
                                    vertical_lines_nr=vertical_lines_nr,
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
@@ -64,21 +71,23 @@ if __name__ == "__main__":
     jetson_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
                                  enable_field_detection=True,
                                  enable_randomized_observations=True,
-                                 score_threshold=0.2,
+                                 score_threshold=0.3,
                                  draw=debug,
                                  debug=debug)
     jetson_vision.jetson_cam.setPoseFrom3DModel(170, 106.8)
     #self.embedded_vision.jetson_cam.setPoseFrom3DModel(170, 107.2)
 
     # Init Odometry
-    odometry_particle = Particle(initial_state=initial_position,
+    odometry_particle = Particle(initial_state=[0, 0, 0],
                                  movement_deviation=[0, 0, 0])
     
     # Send Particles
     UDP = ParticlesSender()
     
+    # Evaluation metrics    
     avg_fps = 0
     steps = 0
+    log = []
 
     for frame_nr in data.frames:    
         # start_time
@@ -92,19 +101,30 @@ if __name__ == "__main__":
         img, has_goal, goal_bbox = get_image_from_frame_nr(path, frame_nr), has_goals[steps], goals[steps]
 
         # make observations:    
-        _, _, _, _, particle_filter_observations = jetson_vision.process(src = img,
-                                                                         timestamp = data.timestamps[steps])
+        _, _, _, _, particle_filter_observations, vision_dt = jetson_vision.process(src = img,
+                                                                                    timestamp = data.timestamps[steps])
 
         # compute particle filter tracking:    
-        robot_tracker.update(movement, particle_filter_observations, steps)
+        failure_flag, relocalization_flag, avg_particle_state, localization_dt = robot_tracker.update(movement, 
+                                                                                                      particle_filter_observations, 
+                                                                                                      steps)
+        if relocalization_flag: 
+            odometry_particle = Particle(initial_state = avg_particle_state,
+                                         movement_deviation = [0, 0, 0])
         odometry_particle.move(movement)
 
         # update step:    
         final_time = time.time()
         dt = final_time-start_time
         avg_fps = 0.5*avg_fps + 0.5*(1/dt)
-        avg_particle = robot_tracker.get_average_state()
-        print(f'Nr Particles: {robot_tracker.n_particles} | Current processing time: {dt} | Avg FPS: {avg_fps}')
+        print(f'Nr Particles: {robot_tracker.n_particles} | Current processing time: {dt:.3f} | Avg FPS: {avg_fps:.3f} | Frame nr: {frame_nr}')
+
+        # save processing times
+        log.append(serialize_processing_times_to_log(frame_nr, 
+                                                     robot_tracker.n_particles, 
+                                                     dt,
+                                                     vision_dt,
+                                                     localization_dt))
 
         # debug
         if debug:
@@ -112,16 +132,29 @@ if __name__ == "__main__":
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
                 break
-            elif key == ord('p'):
+            elif key == ord('p') or failure_flag:
                 import pdb;pdb.set_trace()
 
         UDP.setMCLMessage(position[steps].astype(float),
-                            robot_tracker.particles.astype(float),
-                            robot_tracker.get_average_state().astype(float),
-                            odometry_particle.state,
-                            steps)
+                          robot_tracker.particles.astype(float),
+                          avg_particle_state.astype(float),
+                          odometry_particle.state,
+                          steps)
         UDP.sendMCLMessage()
         
         steps += 1
 
     cv2.destroyAllWindows()
+
+    if len(log)>1:
+        print("SAVING LOG FILE")
+        dir = cwd+f"/msc_experiments/23jun/{scenario}.csv"
+        fields = ["FRAME NR", "SET SIZE", "TOTAL", \
+                  "VISION TOTAL", "PERSPECTIVE TRANSFORMATION", "BOUNDARY DETECTION", "OBJECT DETECTION", \
+                  "LOCALIZATION TOTAL", "RESAMPLING", "AVG PARTICLE", "WEIGHT NORMALIZATION", "LIKELIHOOD UPDATE", "PROPAGATION"]
+        with open(dir, 'w') as f:
+            write = csv.writer(f)
+            write.writerow(fields)
+            write.writerows(log)
+
+    print("FINISHED")

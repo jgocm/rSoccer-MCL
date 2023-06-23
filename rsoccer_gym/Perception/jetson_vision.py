@@ -217,16 +217,19 @@ class JetsonVision():
         particle_filter_observations: observations used for self-localization algorithm
         """
         # init
+        t0 = time.time()
         self.current_frame = Frame(timestamp=timestamp, input_source=src)
         detections, boundary_points, line_points = [], [], []
 
         # CNN-based (SSD MobileNetv2) object detection ~30ms
         if self.has_object_detection:
             detections = self.detectObjects(self.current_frame.input)
+        t1 = time.time()
 
         # 42ms with field lines detection, 8~9ms without it
         if self.has_field_detection:
             boundary_points, line_points = self.detectFieldPoints(self.current_frame.input, detections)            
+        t2 = time.time()
 
         # remove out-of-field objects and compute relative positions 
         self.trackObjects(detections)        
@@ -236,8 +239,9 @@ class JetsonVision():
 
         # parse field detections for particle filter observations
         particle_filter_observations = self.current_frame.has_goal, boundary_ground_points, line_ground_points
+        t3 = time.time()
 
-        processed_vision = self.current_frame, self.tracked_ball, self.tracked_goal, self.tracked_robot, particle_filter_observations
+        processed_vision = self.current_frame, self.tracked_ball, self.tracked_goal, self.tracked_robot, particle_filter_observations, [t3-t0, t3-t2, t2-t1, t1-t0]
         return processed_vision
 
     def process_from_log(self, src, timestamp, has_goal, goal_bounding_box, use_object_detection = False):
@@ -306,28 +310,29 @@ if __name__ == "__main__":
 
     cwd = os.getcwd()
 
-    frame_nr = 50
-    scenario = 'igs'
+    frame_nr = 600
+    scenario = 'tst'
     lap = 1
 
-    vision = JetsonVision(vertical_lines_offset=100,
-                          vertical_lines_nr=1,
-                          enable_randomized_observations=True,
-                          debug=True,
-                          min_wall_length=5)
-    vision.jetson_cam.setPoseFrom3DModel(170, 106.7)
+    vision = JetsonVision(vertical_lines_nr=1, 
+                                 enable_field_detection=True,
+                                 enable_randomized_observations=True,
+                                 score_threshold=0.2,
+                                 draw=True,
+                                 debug=True)
+    vision.jetson_cam.setPoseFrom3DModel(167, 106.7)
 
     while True:
-        dir = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
+        dir = f'/home/vision-blackout/ssl-navigation-dataset-jetson/data/{scenario}_0{lap}'
 
         WINDOW_NAME = "BOUNDARY DETECTION"
         img = get_image_from_frame_nr(dir, frame_nr)
         height, width = img.shape[0], img.shape[1]
         _, _, _, _, particle_filter_observations = vision.process(img, timestamp=time.time())
-        boundary_ground_points, line_ground_points = particle_filter_observations
+        has_goal, boundary_ground_points, line_ground_points = particle_filter_observations
         for point in boundary_ground_points:
             point = vision.jetson_cam.xyToPolarCoordinates(point[0], point[1])
-            print(point)
+            print(has_goal, point)
         cv2.imshow(WINDOW_NAME, img[:300, :])
         key = cv2.waitKey(-1) & 0xFF
         if key == ord('q'):

@@ -9,7 +9,7 @@ class FieldDetection():
             vertical_lines_nr = 1,
             min_line_length = 3,
             max_line_length = 50,
-            min_wall_length = 10
+            min_wall_length = 5
             ):
         # DEFINE COLORS:
         self.BLACK = [0, 0, 0]
