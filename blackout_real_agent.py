@@ -23,8 +23,8 @@ if __name__ == "__main__":
     vertical_lines_nr = 1
 
     # CHOOSE SCENARIO
-    scenario = 'igs'
-    lap = 3
+    scenario = 'rnd'
+    lap = 1
 
     # LOAD DATA
     path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'

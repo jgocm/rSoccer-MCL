@@ -85,6 +85,7 @@ class SSLVisionBlackoutEnv(SSLBaseEnv):
         self.step(robot_position)
         if env_sleep: time.sleep(time_step)
 
+
     def _render_particles(self):
         for i in range(self.n_particles):
             self.frame.particles[i] = self.particles[i]
