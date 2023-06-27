@@ -1,45 +1,41 @@
+import os
 import csv
+import numpy as np
 import matplotlib.pyplot as plt
+from load_processing_data import *
 
-scenario = 'igs_03'
-file_path = f'/home/vision-blackout/rSoccer-MCL/msc_experiments/23jun/{scenario}.csv'
+if __name__ == "__main__":
+    # CHOOSE SCENARIO
+    scenarios = ['rnd_01', 'sqr_02', 'igs_03', 'tst_01']
+    scenario = scenarios[0]
 
-# Initialize empty lists to store the data
-columns = []
-data = []
+    # SET PATH AND READ DATA
+    cwd = os.getcwd()
+    path_to_log = cwd+f"/msc_experiments/23jun/{scenario}.csv"
+    data = Read(path_to_log)
+    
+    total = data.get_totals()[1:]
+    vision = data.get_vision()[1:, 0]
+    localization = data.get_localization()[1:, 0]
 
-# Read the CSV file
-with open(file_path, 'r') as file:
-    csv_reader = csv.reader(file)
-    header = next(csv_reader)  # Read the header row
-    columns = header[1:]  # Exclude the first column
+    # Set plots
+    fig = plt.figure(figsize = (10, 7))
 
-    # Iterate over the remaining rows
-    for row in csv_reader:
-        data.append([float(value) for value in row[1:]])  # Convert values to float and exclude the first column
+    # Set field labels
+    labels = ['Total', 'Vision', 'Localization']
 
-# Determine the number of subplots
-num_subplots = len(columns)
+    # Create a figure and axis
+    ax = fig.add_axes([0.07, 0.07, 0.91, 0.91])
 
-# Set up the subplots
-fig, axes = plt.subplots(num_subplots, 1, figsize=(10, 6), sharex=True)
+    # Plot the boxplots
+    boxplot = ax.boxplot([total, vision, localization], showfliers=False)
 
-# Plotting the processing time range for each column
-for i, column_data in enumerate(data):
-    ax = axes[i]
-    ax.boxplot(column_data)
+    # Set the x-axis tick labels
+    ax.set_xticklabels(labels)
 
-    # Set labels for each subplot
-    ax.set_ylabel('Processing Time')
+    # Set y-axis label
+    ax.set_ylabel('Processing Time (s)')
 
-    # Set title for each subplot
-    ax.set_title(columns[i])
-
-# Set x-axis label for the last subplot
-axes[-1].set_xlabel('Column')
-
-# Adjust the spacing between subplots
-plt.tight_layout()
-
-# Show the plot
-plt.show()
+    # Show the plot
+    plt.show()
+    
