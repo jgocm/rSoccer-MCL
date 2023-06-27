@@ -67,11 +67,12 @@ if __name__ == "__main__":
 
     step = 1
     vertical_lines_nr=1
-    robot_vision = JetsonVision(
-                            vertical_lines_nr=vertical_lines_nr, 
-                            enable_field_detection=True,
-                            enable_randomized_observations=True,
-                            debug=debug)
+    robot_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr,
+                                vertical_lines_offset=int(640/vertical_lines_nr), 
+                                enable_field_detection=True,
+                                enable_randomized_observations=True,
+                                debug=debug,
+                                draw=debug)
     robot_vision.jetson_cam.setPoseFrom3DModel(170, 106.8)
 
     particle_vision = ParticleVision(vertical_lines_nr=vertical_lines_nr)
@@ -85,8 +86,8 @@ if __name__ == "__main__":
     errors_log = []
 
     # CHOOSE SCENARIO
-    scenario = 'sqr'
-    laps = [1] #TODO: remover falsos positivos das detecções de gol
+    scenario = 'rnd'
+    laps = [1,2,3] #TODO: remover falsos positivos das detecções de gol
 
     for lap in laps:
         # LOAD DATASET FROM REAL EXPERIMENTS
@@ -120,13 +121,14 @@ if __name__ == "__main__":
                                                         particle_boundary_points)
                 
                 print(frames[i], robot_boundary_points, particle_boundary_points)        
-                if debug:
+                if debug or robot_boundary_points[0][0]>8:
                     cv2.imshow("BOUNDARY DETECTION", img)
                     key = cv2.waitKey(-1) & 0xFF
                     if key == ord('q'):
                         break
                     if key == ord('s'):
                         errors_log.append(data)
+                        cv2.imwrite(cwd+f"/observations_data/{scenario}_0{lap}_{frames[i]}.png", img)
             
                 else:
                     errors_log.append(data)
