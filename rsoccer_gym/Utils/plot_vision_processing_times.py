@@ -6,10 +6,11 @@ if __name__ == "__main__":
     # CHOOSE SCENARIO
     scenarios = ['rnd_01', 'sqr_02', 'igs_03', 'tst_01']
     scenario = scenarios[0]
+    round = 1
 
     # SET PATH AND READ DATA
     cwd = os.getcwd()
-    path_to_log = cwd+f"/msc_experiments/23jun/{scenario}.csv"
+    path_to_log = cwd+f"/msc_experiments/logs/27jun/seed/processing_times/{scenario}_{round}.csv"
     data = Read(path_to_log)
 
     # Processing times in seconds

@@ -1,3 +1,4 @@
+import os
 import cv2
 import math
 import numpy as np
@@ -65,9 +66,11 @@ class ParticleVision:
     Class for simulating Vision Blackout vision module
     '''
 
-    path_to_intrinsic_parameters = "/home/vision-blackout/rSoccer-MCL/rsoccer_gym/Perception/camera_matrix_C922.txt"
-    path_to_points3d = "/home/vision-blackout/rSoccer-MCL/rsoccer_gym/Perception/calibration_points3d.txt"
-    path_to_points2d = "/home/vision-blackout/rSoccer-MCL/rsoccer_gym/Perception/calibration_points2d.txt"
+    cwd = os.getcwd()
+
+    path_to_intrinsic_parameters = cwd+"/rsoccer_gym/Perception/camera_matrix_C922.txt"
+    path_to_points3d = cwd+"/rsoccer_gym/Perception/calibration_points3d.txt"
+    path_to_points2d = cwd+"/rsoccer_gym/Perception/calibration_points2d.txt"
     camera_matrix = np.loadtxt(path_to_intrinsic_parameters)
     points3d = np.loadtxt(path_to_points3d, dtype="float64")
     points2d = np.loadtxt(path_to_points2d, dtype="float64")

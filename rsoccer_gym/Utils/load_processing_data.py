@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     # SET PATH
     cwd = os.getcwd()
-    path_to_log = cwd+f"/msc_experiments/23jun/{scenario}.csv"
+    path_to_log = cwd+f"/msc_experiments/logs/23jun/{scenario}.csv"
 
     data = Read(path_to_log)
 
