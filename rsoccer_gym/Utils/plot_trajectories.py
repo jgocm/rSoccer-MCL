@@ -1,10 +1,50 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-from load_trajectories import *
+import load_trajectories
+
+def load_plot_and_save_set_sizes(path, scenario, round, end, linewidth):
+    data = load_trajectories.Read(path + f"/{scenario}_{round}.csv")
+
+    # Load the data from the text files
+    set_sizes = data.get_set_sizes()
+    timestamps_data = data.get_timestamps()
+    timestamps_data = timestamps_data - timestamps_data[0]
+
+    # Extract the X and Y coordinates from the data
+    end = min(end, len(timestamps_data))
+    set_sizes = set_sizes[:end]
+    timestamps = timestamps_data[:end]
+    
+    # Create a new figure with a single subplot
+    fig, ax = plt.subplots()
+
+    # Create a scatter plot of the X and Y coordinates for each trajectory
+    ax.plot(timestamps, set_sizes, label='Adaptive', linewidth=linewidth, color='blue')
+
+    # Set the X and Y limits of the plot
+    #ax.set_xlim([-0.3, 4.2])
+    #ax.set_ylim([0, 0.9])
+
+    # Draw the red horizontal line and add a legend
+    line = ax.axhline(y=100, color='red')
+    # Add annotation above the line
+    ax.annotate('M=100', xy=(1*timestamps[-1], 100), xytext=(0.93*timestamps[-1], 97))
+    
+    # Increase the font size of the X and Y axis numbers
+    ax.tick_params(axis='both', which='major', labelsize=17)
+
+    # Add a legend to the plot
+    ax.legend(fontsize=17)
+
+    # Save the figure as a PNG file
+    fig.savefig(path + f'/set_sizes_{scenario}_{round}.png', dpi=400)
+
+    # Show the plot
+    # plt.show()
 
 def load_plot_and_save_trajectories(path, scenario, round, end, linewidth):
-    data = Read(path + f"/{scenario}_{round}.csv")
+    data = load_trajectories.Read(path + f"/{scenario}_{round}.csv")
 
     # Load the data from the text files
     ground_truth_data = data.get_ground_truth()
@@ -44,13 +84,14 @@ def load_plot_and_save_trajectories(path, scenario, round, end, linewidth):
     # plt.show()
 
 def load_plot_and_save_distances(path, scenario, round, end, linewidth):
-    data = Read(path + f"/{scenario}_{round}.csv")
+    data = load_trajectories.Read(path + f"/{scenario}_{round}.csv")
 
     # Load the data from the text files
     ground_truth_data = data.get_ground_truth()
     mcl_data = data.get_mcl()
     odometry_data = data.get_odometry()
     timestamps_data = data.get_timestamps()
+    timestamps_data = timestamps_data - timestamps_data[0]
 
     # Extract the X and Y coordinates from the data
     end = min(end, len(timestamps_data))
@@ -73,6 +114,12 @@ def load_plot_and_save_distances(path, scenario, round, end, linewidth):
     #ax.set_xlim([-0.3, 4.2])
     #ax.set_ylim([0, 0.9])
 
+    # Draw the red horizontal line and add a legend
+    line = ax.axhline(y=0.18, color='red')
+    # Add annotation above the line
+    ax.annotate('D=0.18m', xy=(1*timestamps[-1], 0.18), xytext=(0.93*timestamps[-1], 0.22),
+                arrowprops=dict(facecolor='black', arrowstyle='->'))
+    
     # Increase the font size of the X and Y axis numbers
     ax.tick_params(axis='both', which='major', labelsize=17)
 
@@ -95,6 +142,17 @@ def crop_distance_fig(path, scenario, round):
     crop = img[200:-50, 100:-220]
     cv2.imwrite(path + f'/distance_comparison_{scenario}_{round}_crop.png', crop)
 
+def crop_set_size_fig(path, scenario, round):
+    img = cv2.imread(path + f'/set_sizes_{scenario}_{round}.png')
+    crop = img[200:-50, 100:-220]
+    cv2.imwrite(path + f'/set_sizes_{scenario}_{round}_crop.png', crop)
+
+def load_trajectories_and_compute_RMSE(path, scenario, round):
+    data = load_trajectories.Read(path + f"/{scenario}_{round}.csv")
+    mcl_RMSE, odometry_RMSE = data.get_trajectory_RMSEs()
+    fps = data.get_avg_fps()
+    print(f"Scenario: {scenario}_{round} | Self-Localization RMSE: {mcl_RMSE:.3f} | Odometry RMSE: {odometry_RMSE:.3f} | Avg. FPS: {fps:.3f}")    
+
 if __name__ == "__main__":
     import os
 
@@ -108,9 +166,15 @@ if __name__ == "__main__":
             end = 2000
             if scenario == 'rnd_01': end = 800
             linewidth = 2.5
-            path = cwd+f'/msc_experiments/logs/27jun/seed/localization'
+            path = cwd+f'/msc_experiments/results/adaptive/random/localization'
             load_plot_and_save_distances(path, scenario, round, end, linewidth)
             crop_distance_fig(path, scenario, round)
             load_plot_and_save_trajectories(path, scenario, round, end, linewidth)
             crop_trajectory_fig(path, scenario, round)
+            load_plot_and_save_set_sizes(path, scenario, round, end, linewidth)
+            crop_set_size_fig(path, scenario, round)
+            load_trajectories_and_compute_RMSE(path, scenario, round)
+
+
+
 

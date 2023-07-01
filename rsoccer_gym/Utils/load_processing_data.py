@@ -7,6 +7,7 @@ class Read:
                  path):
         self.path = path
         self.fields = []
+        self.frames = []
         self.set_size = []
         self.total = []
         self.vision = []
@@ -19,6 +20,7 @@ class Read:
                     self.fields = row
                     line_count += 1
                 else:
+                    self.frames.append(int(row[0]))
                     self.set_size.append(int(row[1]))
                     self.total.append(float(row[2]))
                     self.vision.append([float(row[3]), float(row[4]), float(row[5]), float(row[6])])
@@ -27,6 +29,9 @@ class Read:
     
     def get_fields(self):
         return self.fields
+
+    def get_frames(self):
+        return np.array(self.frames)
 
     def get_set_sizes(self):
         return np.array(self.set_size)
@@ -39,7 +44,25 @@ class Read:
     
     def get_localization(self):
         return np.array(self.localization)
-    
+
+    def get_localization_total_ms(self):
+        return 1000*np.array(self.get_localization()[1:, 0])
+
+    def get_resampling_ms(self):
+        return 1000*np.array(self.get_localization()[1:, 1])
+
+    def get_avg_particle_ms(self):
+        return 1000*np.array(self.get_localization()[1:, 2])
+
+    def get_weights_normalization_ms(self):
+        return 1000*np.array(self.get_localization()[1:, 3])
+
+    def get_likelihood_update_ms(self):
+        return 1000*np.array(self.get_localization()[1:, 4])
+
+    def get_particles_propagation_ms(self):
+        return 1000*np.array(self.get_localization()[1:, 5])
+
 if __name__ == "__main__":
 
     # CHOOSE SCENARIO
