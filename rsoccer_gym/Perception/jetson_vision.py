@@ -124,7 +124,7 @@ class JetsonVision():
         if class_id == 1:
             ball = self.trackBall(score, xmin, xmax, ymin, ymax)
             self.tracked_ball = ball
-        elif class_id == 2:
+        elif class_id == 2 and score>0.6:
             goal = self.trackGoal(score, xmin, xmax, ymin, ymax)
             self.tracked_goal = goal
         elif class_id == 3:

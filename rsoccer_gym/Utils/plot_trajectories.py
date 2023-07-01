@@ -41,7 +41,7 @@ def load_plot_and_save_trajectories(path, scenario, round, end, linewidth):
     fig.savefig(path + f'/trajectory_comparison_{scenario}_{round}.png', dpi=400)
 
     # Show the plot
-    plt.show()
+    # plt.show()
 
 def load_plot_and_save_distances(path, scenario, round, end, linewidth):
     data = Read(path + f"/{scenario}_{round}.csv")
@@ -108,7 +108,7 @@ if __name__ == "__main__":
             end = 2000
             if scenario == 'rnd_01': end = 800
             linewidth = 2.5
-            path = cwd+f'/msc_experiments/logs/27jun/random/localization'
+            path = cwd+f'/msc_experiments/logs/27jun/seed/localization'
             load_plot_and_save_distances(path, scenario, round, end, linewidth)
             crop_distance_fig(path, scenario, round)
             load_plot_and_save_trajectories(path, scenario, round, end, linewidth)

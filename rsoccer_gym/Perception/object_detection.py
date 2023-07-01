@@ -146,9 +146,8 @@ class DetectNet():
 
         # CONVERT IMAGE FORMAT
         cvt_img = self.convertImage(img, 
-                                width=self.input_width,
-                                height=self.input_height
-                                )
+                                    width=self.input_width,
+                                    height=self.input_height)
 
         start = time.perf_counter()
         self.model.inputs[0].host = cvt_img
@@ -157,8 +156,7 @@ class DetectNet():
             bindings=self.model.bindings, 
             inputs=self.model.inputs, 
             outputs=self.model.outputs, 
-            stream=self.model.stream
-        )
+            stream=self.model.stream)
         inference_time = (time.perf_counter() - start) * 1000
 
         boxes = trt_outputs[1].reshape([-1, 4])
