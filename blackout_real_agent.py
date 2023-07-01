@@ -82,7 +82,7 @@ if __name__ == "__main__":
                                  movement_deviation=[0, 0, 0])
     
     # Send Particles
-    UDP = ParticlesSender()
+    UDP = ParticlesSender(receiver_address='192.168.1.52')
     
     # Evaluation metrics    
     avg_fps = 0
@@ -145,16 +145,5 @@ if __name__ == "__main__":
         steps += 1
 
     cv2.destroyAllWindows()
-
-    if len(log)>1:
-        print("SAVING LOG FILE")
-        dir = cwd+f"/msc_experiments/23jun/{scenario}.csv"
-        fields = ["FRAME NR", "SET SIZE", "TOTAL", \
-                  "VISION TOTAL", "PERSPECTIVE TRANSFORMATION", "BOUNDARY DETECTION", "OBJECT DETECTION", \
-                  "LOCALIZATION TOTAL", "RESAMPLING", "AVG PARTICLE", "WEIGHT NORMALIZATION", "LIKELIHOOD UPDATE", "PROPAGATION"]
-        with open(dir, 'w') as f:
-            write = csv.writer(f)
-            write.writerow(fields)
-            write.writerows(log)
 
     print("FINISHED")

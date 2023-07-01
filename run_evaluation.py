@@ -34,9 +34,9 @@ def save_processing_times_log(cwd, log, scenario, lap, has_seed):
     if len(log)>1:
         print("SAVING PROCESSING TIMES LOG FILE")
         if has_seed:
-            dir = cwd+f"/msc_experiments/logs/27jun/seed/processing_times/{scenario}_{lap}.csv"
+            dir = cwd+f"/msc_experiments/logs/01jul/seed/processing_times/{scenario}_{lap}.csv"
         else:
-            dir = cwd+f"/msc_experiments/logs/27jun/random/processing_times/{scenario}_{lap}.csv"
+            dir = cwd+f"/msc_experiments/logs/01jul/random/processing_times/{scenario}_{lap}.csv"
         fields = ["FRAME NR", "SET SIZE", "TOTAL", \
                   "VISION TOTAL", "PERSPECTIVE TRANSFORMATION", "BOUNDARY DETECTION", "OBJECT DETECTION", \
                   "LOCALIZATION TOTAL", "RESAMPLING", "AVG PARTICLE", "WEIGHT NORMALIZATION", "LIKELIHOOD UPDATE", "PROPAGATION"]
@@ -49,9 +49,9 @@ def save_localization_log(cwd, log, scenario, lap, has_seed):
     if len(log)>1:
         print("SAVING LOCALIZATION LOG FILE")
         if has_seed:
-            dir = cwd+f"/msc_experiments/logs/27jun/seed/localization/{scenario}_{lap}.csv"
+            dir = cwd+f"/msc_experiments/logs/01jul/seed/localization/{scenario}_{lap}.csv"
         else:
-            dir = cwd+f"/msc_experiments/logs/27jun/random/localization/{scenario}_{lap}.csv"
+            dir = cwd+f"/msc_experiments/logs/01jul/random/localization/{scenario}_{lap}.csv"
 
         fields = ["FRAME NR", "SET SIZE", \
                   "GROUND TRUTH X", "GROUND TRUTH Y", "GROUND TRUTH THETA", \
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     
     # CHOOSE SCENARIO
     scenarios = ['rnd_01', 'sqr_02', 'igs_03']
-    laps = [1, 2, 3]
+    laps = [1, 2, 3, 4, 5]
 
     for use_seed in use_seeds:
         for scenario in scenarios:
