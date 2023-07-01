@@ -44,6 +44,32 @@ class Read:
     def get_timestamps(self):
         return np.array(self.timestamps)
 
+    def pointsDistance(self, truth, predict):
+        diff = np.subtract(truth, predict) # Points difference x2 - x1, y2 - y1
+        return np.sum(np.square(diff), axis=1, keepdims=True) #  Components sum (x^2 + y^2) 
+
+    def MSE(self, truth, predict):
+        return self.pointsDistance(truth, predict).mean() # Square supressed by missing distance sqrt
+
+    def RMSE(self, truth, predict):
+        return np.sqrt(self.MSE(truth, predict))
+    
+    def get_trajectory_RMSEs(self):
+        ground_truth = self.get_ground_truth()[:, :2]
+        mcl = self.get_mcl()[:, :2]
+        odometry = self.get_odometry()[:, :2]
+
+        mcl_RMSE = self.RMSE(ground_truth, mcl)
+        odometry_RMSE = self.RMSE(ground_truth, odometry)
+
+        return mcl_RMSE, odometry_RMSE
+
+    def get_avg_fps(self):
+        timestamps = self.get_timestamps()
+        avg_processing_time = np.mean(timestamps[1:] - timestamps[:-1])
+        fps = 1/avg_processing_time
+        return fps
+
 if __name__ == "__main__":
     import os
 
@@ -57,4 +83,4 @@ if __name__ == "__main__":
 
     data = Read(path)
 
-    print(data.odometry[1000])
+    print(data.get_avg_fps())
