@@ -383,8 +383,8 @@ class ParticleFilter:
         self.n_active_particles = int(map(1-self.average_particle_weight,
                                           in_min=0.01,
                                           in_max=0.6,
-                                          out_min=100, 
-                                          out_max=100))
+                                          out_min=20, 
+                                          out_max=200))
         if abs(self.n_active_particles-self.n_particles)>5:
             self.n_particles = self.n_active_particles
             return True
