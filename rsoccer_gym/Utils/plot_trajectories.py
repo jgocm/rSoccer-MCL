@@ -117,7 +117,7 @@ def load_plot_and_save_distances(path, scenario, round, end, linewidth):
     # Draw the red horizontal line and add a legend
     line = ax.axhline(y=0.18, color='red')
     # Add annotation above the line
-    ax.annotate('D=0.18m', xy=(1*timestamps[-1], 0.18), xytext=(0.93*timestamps[-1], 0.22),
+    ax.annotate('D=0.18m', xy=(1*timestamps[-1], 0.18), xytext=(0.93*timestamps[-1], 0.3),
                 arrowprops=dict(facecolor='black', arrowstyle='->'))
     
     # Increase the font size of the X and Y axis numbers
@@ -160,20 +160,21 @@ if __name__ == "__main__":
 
     # Choose scenario
     scenarios = ['rnd_01', 'sqr_02', 'igs_03']
-    rounds = [1, 2, 3]
-    for scenario in scenarios:
-        for round in rounds:
-            end = 2000
-            if scenario == 'rnd_01': end = 800
-            linewidth = 2.5
-            path = cwd+f'/msc_experiments/results/adaptive/random/localization'
-            load_plot_and_save_distances(path, scenario, round, end, linewidth)
-            crop_distance_fig(path, scenario, round)
-            load_plot_and_save_trajectories(path, scenario, round, end, linewidth)
-            crop_trajectory_fig(path, scenario, round)
-            load_plot_and_save_set_sizes(path, scenario, round, end, linewidth)
-            crop_set_size_fig(path, scenario, round)
-            load_trajectories_and_compute_RMSE(path, scenario, round)
+    rounds = [1, 2, 3, 4, 5]
+    set_sizes = ['adaptive', 'fixed']
+    for set_size in set_sizes:
+        for scenario in scenarios:
+            for round in rounds:
+                end = 2000
+                linewidth = 2.5
+                path = cwd+f'/msc_experiments/logs/01jul/{set_size}/random/localization'
+                load_plot_and_save_distances(path, scenario, round, end, linewidth)
+                crop_distance_fig(path, scenario, round)
+                load_plot_and_save_trajectories(path, scenario, round, end, linewidth)
+                crop_trajectory_fig(path, scenario, round)
+                #load_plot_and_save_set_sizes(path, scenario, round, end, linewidth)
+                #crop_set_size_fig(path, scenario, round)
+                #load_trajectories_and_compute_RMSE(path, scenario, round)
 
 
 
