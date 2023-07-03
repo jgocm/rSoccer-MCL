@@ -180,9 +180,9 @@ class FieldDetection():
         """
         Make description here
         """
-        segmented_img = self.segmentField(src)
-        boundary_points = self.fieldWallDetection(segmented_img)
-        field_line_points = self.fieldLineDetection(segmented_img)
+        #segmented_img = self.segmentField(src)
+        boundary_points = self.fieldWallDetection(src)
+        field_line_points = self.fieldLineDetection(src)
         return boundary_points, field_line_points     
 
     def detectFieldLinesAndBoundaryMerged(self, src):

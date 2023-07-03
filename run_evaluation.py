@@ -34,9 +34,9 @@ def save_processing_times_log(cwd, log, scenario, lap, has_seed):
     if len(log)>1:
         print("SAVING PROCESSING TIMES LOG FILE")
         if has_seed:
-            dir = cwd+f"/msc_experiments/logs/01jul/adaptive/seed/processing_times/{scenario}_{lap}.csv"
+            dir = cwd+f"/msc_experiments/logs/03jul/adaptive/seed/processing_times/{scenario}_{lap}.csv"
         else:
-            dir = cwd+f"/msc_experiments/logs/01jul/adaptive/random/processing_times/{scenario}_{lap}.csv"
+            dir = cwd+f"/msc_experiments/logs/03jul/adaptive/random/processing_times/{scenario}_{lap}.csv"
         fields = ["FRAME NR", "SET SIZE", "TOTAL", \
                   "VISION TOTAL", "PERSPECTIVE TRANSFORMATION", "BOUNDARY DETECTION", "OBJECT DETECTION", \
                   "LOCALIZATION TOTAL", "RESAMPLING", "AVG PARTICLE", "WEIGHT NORMALIZATION", "LIKELIHOOD UPDATE", "PROPAGATION"]
@@ -49,9 +49,9 @@ def save_localization_log(cwd, log, scenario, lap, has_seed):
     if len(log)>1:
         print("SAVING LOCALIZATION LOG FILE")
         if has_seed:
-            dir = cwd+f"/msc_experiments/logs/01jul/adaptive/seed/localization/{scenario}_{lap}.csv"
+            dir = cwd+f"/msc_experiments/logs/03jul/adaptive/seed/localization/{scenario}_{lap}.csv"
         else:
-            dir = cwd+f"/msc_experiments/logs/01jul/adaptive/random/localization/{scenario}_{lap}.csv"
+            dir = cwd+f"/msc_experiments/logs/03jul/adaptive/random/localization/{scenario}_{lap}.csv"
 
         fields = ["FRAME NR", "SET SIZE", \
                   "GROUND TRUTH X", "GROUND TRUTH Y", "GROUND TRUTH THETA", \

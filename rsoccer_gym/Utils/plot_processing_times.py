@@ -70,7 +70,6 @@ def compare_processing_times(path, scenario, round, is_seed, linewidth):
     # Show the plot
     plt.show()
 
-
 def load_and_box_plot_processing_times(path, scenario, round):
     data = load_processing_data.Read(path + f"/{scenario}_{round}.csv")
     
@@ -98,7 +97,7 @@ def load_and_box_plot_processing_times(path, scenario, round):
 
     # Show the plot
     plt.show()
-    
+
 if __name__ == "__main__":
     # SET PATH AND READ DATA
     cwd = os.getcwd()
@@ -109,7 +108,7 @@ if __name__ == "__main__":
 
     for scenario in scenarios:
         for round in rounds:
-            path = cwd+f'/msc_experiments/results'
+            path = cwd+f'/msc_experiments/logs/03jul'
             is_seed = True
             linewidth = 1.5
-            compare_processing_times(path, scenario, round, is_seed, linewidth)
+            load_and_box_plot_processing_times(path, scenario, round)
