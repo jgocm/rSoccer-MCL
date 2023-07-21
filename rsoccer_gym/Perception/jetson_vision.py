@@ -232,9 +232,11 @@ class JetsonVision():
             if self.enable_randomized_observations: 
                 self.field_detector.arrangeVerticalLinesRandom(img_width=src.shape[1], detections=detections)
             times.append(time.time())
-            boundary_points = self.field_detector.fieldWallDetection(src)
+            #boundary_points = self.field_detector.fieldWallDetection(src)
+            boundary_points = []
             times.append(time.time())
             line_points = self.field_detector.fieldLineDetection(src)
+            #line_points = []
             times.append(time.time())
 
         # remove out-of-field objects and compute relative positions 
@@ -314,27 +316,19 @@ if __name__ == "__main__":
         img = cv2.imread(dir)
         return img
 
-    def serialize_vision_processing_times_for_log(times):
-        [initial_timestamp, 
-         objects_detection_timestamp, 
-         line_arrengment_timestamp,
-         boundary_detection_timestamp,
-         line_detection_timestamp,
-         camera_transformation_timestamp] = times
-        
-        import pdb;pdb.set_trace()
-
     cwd = os.getcwd()
 
-    frame_nr = 600
+    frame_nr = 1
     scenario = 'rnd'
-    lap = 1
-    WINDOW_NAME = "Vision Processing"
-    path = f'/home/vision-blackout/ssl-navigation-dataset-jetson/data/{scenario}_0{lap}'
+    lap = 2
+    WINDOW_NAME = "line_detection"
+    path = f'/home/rc-blackout/ssl-navigation-dataset/data/{scenario}_0{lap}'
+    image_nr = 7
 
-    vision = JetsonVision(vertical_lines_nr=1, 
+    vision = JetsonVision(vertical_lines_nr=10,
+                          vertical_lines_offset=int(640/10), 
                           enable_field_detection=True,
-                          enable_randomized_observations=True,
+                          enable_randomized_observations=False,
                           score_threshold=0.35,
                           draw=True,
                           debug=True)
@@ -346,13 +340,14 @@ if __name__ == "__main__":
         _, _, _, _, particle_filter_observations, times = vision.process(img, timestamp=time.time())
         has_goal, boundary_ground_points, line_ground_points = particle_filter_observations
         cv2.imshow(WINDOW_NAME, img[:300, :])
+        print(f'frame_nr: {frame_nr}')
         key = cv2.waitKey(-1) & 0xFF
         if key == ord('q'):
             break
         if key == ord('s'):
-            cv2.imwrite(WINDOW_NAME + '.png', img[:300, :])
+            cv2.imwrite(WINDOW_NAME + f'_{image_nr}.png', img[:300, :])
+            image_nr=image_nr+1
         else:
-            serialize_vision_processing_times_for_log(times)
             frame_nr=frame_nr+1
 
 else:
