@@ -111,13 +111,13 @@ class RCGymRender:
 
         # add field_lines
         self._add_field_lines_ssl()
-        # add robots
-        self._add_ssl_robots()
+
         # add filter particles
         self._add_particles()
+        # add robots
+        self._add_ssl_robots()
         # add trackers
-        self._add_trackers()    
-
+        self._add_trackers() 
         # add ball
         self._add_ball()
 
