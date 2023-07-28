@@ -115,6 +115,9 @@ class ParticleFilter:
         self.data_type = data_type
 
         # Initialize filter settings
+        self.is_adaptive = False
+        self.n_max_particles = number_of_particles
+        self.n_min_particles = 20
         self.n_particles = number_of_particles
         self.n_active_particles = number_of_particles
         self.particles = self.reset_particles()
@@ -377,11 +380,12 @@ class ParticleFilter:
         Checks if resampling is needed
         '''
         
-        self.n_active_particles = int(map(1-self.average_particle_weight,
-                                          in_min=0.01,
-                                          in_max=0.6,
-                                          out_min=10, 
-                                          out_max=100))
+        if self.is_adaptive:
+            self.n_active_particles = int(map(1-self.average_particle_weight,
+                                            in_min=0.01,
+                                            in_max=0.6,
+                                            out_min=self.n_min_particles, 
+                                            out_max=self.n_max_particles))
         if abs(self.n_active_particles-self.n_particles)>15:
             self.n_particles = self.n_active_particles
             return True
