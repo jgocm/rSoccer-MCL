@@ -181,6 +181,14 @@ class ParticleFilter:
         particle_state += global_movement
         return particle_state
 
+    def generate_particle_from_seed(self, seed_x, seed_y, max_distance):
+        radius = np.random.uniform(0, max_distance)
+        direction = np.random.uniform(-180, 180)
+        orientation = np.random.uniform(-180, 180)
+        x = seed_x + radius*math.cos(np.deg2rad(direction))
+        y = seed_y + radius*math.sin(np.deg2rad(direction))
+        return x, y, orientation        
+
     def initialize_particles_from_seed_position(self, position_x, position_y, max_distance):
         """
         Initialize the particles uniformly around a seed position (x, y, orientation). 
@@ -193,11 +201,9 @@ class ParticleFilter:
         particles = []
         weight = 1.0/self.n_particles
         for i in range(self.n_particles):
-            radius = np.random.uniform(0, max_distance)
-            direction = np.random.uniform(-180, 180)
-            orientation = np.random.uniform(-180, 180)
-            x = seed_x + radius*math.cos(np.deg2rad(direction))
-            y = seed_y + radius*math.sin(np.deg2rad(direction))
+            x, y, orientation = self.generate_particle_from_seed(seed_x, seed_y, max_distance)
+            while is_out_of_field([x, y, orientation], x_min=self.x_min, x_max=self.x_max, y_min=self.y_min, y_max=self.y_max):
+                x, y, orientation = self.generate_particle_from_seed(seed_x, seed_y, max_distance)
             particle = self.set_particle(weight, x, y, orientation)
             particles.append(particle)
         
