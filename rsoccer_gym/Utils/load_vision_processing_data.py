@@ -39,22 +39,22 @@ class Read:
         return np.array(self.frames)
 
     def get_total_ms(self):
-        return np.array(self.total)
+        return 1000*np.array(self.total)
 
     def get_objects_detection_ms(self):
-        return np.array(self.objects_detection)
+        return 1000*np.array(self.objects_detection)
 
     def get_scan_arrangment_ms(self):
-        return np.array(self.scan_arrangment)
+        return 1000*np.array(self.scan_arrangment)
     
     def get_boundary_detection_ms(self):
-        return np.array(self.boundary_detection)
+        return 1000*np.array(self.boundary_detection)
 
     def get_line_detection_ms(self):
-        return np.array(self.line_detection)
+        return 1000*np.array(self.line_detection)
     
     def get_camera_transformation_ms(self):
-        return np.array(self.camera_transformation)
+        return 1000*np.array(self.camera_transformation)
 
 if __name__ == "__main__":
 

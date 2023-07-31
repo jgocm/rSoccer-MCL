@@ -54,7 +54,7 @@ def load_and_box_plot_vision_processing_times(path, scenario):
     # Add the values next to the bars
     for i, bar in enumerate(bars):
         width = bar.get_width()
-        ax.annotate(f'{width:.3f}ms', xy=(start_positions[i] + width, bar.get_y() + bar.get_height() / 2),
+        ax.annotate(f'{width:.2f}ms', xy=(start_positions[i] + width, bar.get_y() + bar.get_height() / 2),
                     xytext=(5, 0), textcoords='offset points', ha='left', va='center')
 
 
