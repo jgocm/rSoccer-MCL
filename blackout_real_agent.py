@@ -19,8 +19,11 @@ if __name__ == "__main__":
     from rsoccer_gym.Utils.load_localization_data import Read
     cwd = os.getcwd()
 
-    n_particles = 200
+    is_adaptive = False
+    has_seed = True
     vertical_lines_nr = 1
+    if is_adaptive: n_particles = 200
+    else: n_particles = 100
 
     # CHOOSE SCENARIO
     scenario = 'rnd'
@@ -53,6 +56,7 @@ if __name__ == "__main__":
 
     # Init Particle Filter
     robot_tracker = ParticleFilter(number_of_particles=n_particles, 
+                                   is_adaptive = is_adaptive,
                                    field=env.field,
                                    motion_noise=[0.2, 0.2, 0.05],
                                    measurement_weights=[1],
@@ -60,8 +64,10 @@ if __name__ == "__main__":
                                    resampling_algorithm=ResamplingAlgorithms.SYSTEMATIC,
                                    initial_odometry=odometry[0],
                                    data_type=np.float16)
-    #robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
-    robot_tracker.initialize_particles_uniform()
+    if has_seed:
+        robot_tracker.initialize_particles_from_seed_position(initial_position[0], initial_position[1], seed_radius)
+    else:
+        robot_tracker.initialize_particles_uniform()
     
     # Init Embedded Vision
     jetson_vision = JetsonVision(vertical_lines_nr=vertical_lines_nr, 
@@ -100,5 +106,4 @@ if __name__ == "__main__":
         env.render()
         print(f"Step nr: {env.steps}")
 
-        if frame_nr==data.frames[0]:
-            import pdb;pdb.set_trace()
+        if frame_nr==data.frames[0]: import pdb;pdb.set_trace()

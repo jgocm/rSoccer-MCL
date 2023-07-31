@@ -95,6 +95,7 @@ class Particle:
 class ParticleFilter:
     def __init__(self,
                  number_of_particles,
+                 is_adaptive,
                  field,
                  motion_noise,
                  measurement_weights,
@@ -115,7 +116,7 @@ class ParticleFilter:
         self.data_type = data_type
 
         # Initialize filter settings
-        self.is_adaptive = False
+        self.is_adaptive = is_adaptive
         self.n_max_particles = number_of_particles
         self.n_min_particles = 20
         self.n_particles = number_of_particles
