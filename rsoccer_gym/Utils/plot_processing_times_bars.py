@@ -54,6 +54,7 @@ def load_and_bar_plot_localization_processing_times(path, scenario, round, is_se
 
     # Set the x-axis label
     ax.set_xlabel('Processing Time (ms)')
+    ax.set_xlim(xmax=40)
 
     # Set the title of the plot
     ax.set_title(f'Localization Processing Time Comparison (M={set_size})')
