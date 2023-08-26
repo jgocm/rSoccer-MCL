@@ -322,12 +322,12 @@ if __name__ == "__main__":
         for point in boundary_ground_points:
             point = vision.jetson_cam.xyToPolarCoordinates(point[0], point[1])
             print(point)
-        cv2.imshow(WINDOW_NAME, img[:300, :])
+        cv2.imshow(WINDOW_NAME, img[:, :])
         key = cv2.waitKey(-1) & 0xFF
         if key == ord('q'):
             break
         if key == ord('s'):
-            cv2.imwrite(WINDOW_NAME + '.png', img[:300, :])
+            cv2.imwrite(WINDOW_NAME + '.png', img[:, :])
         else:
             frame_nr=frame_nr+1
 

@@ -65,9 +65,9 @@ class ParticleVision:
     Class for simulating Vision Blackout vision module
     '''
 
-    path_to_intrinsic_parameters = "/home/rc-blackout/rSoccer/rsoccer_gym/Perception/camera_matrix_C922.txt"
-    path_to_points3d = "/home/rc-blackout/rSoccer/rsoccer_gym/Perception/calibration_points3d.txt"
-    path_to_points2d = "/home/rc-blackout/rSoccer/rsoccer_gym/Perception/calibration_points2d.txt"
+    path_to_intrinsic_parameters = "/home/rc-blackout/rSoccer-MCL/rsoccer_gym/Perception/camera_matrix_C922.txt"
+    path_to_points3d = "/home/rc-blackout/rSoccer-MCL/rsoccer_gym/Perception/calibration_points3d.txt"
+    path_to_points2d = "/home/rc-blackout/rSoccer-MCL/rsoccer_gym/Perception/calibration_points2d.txt"
     camera_matrix = np.loadtxt(path_to_intrinsic_parameters)
     points3d = np.loadtxt(path_to_points3d, dtype="float64")
     points2d = np.loadtxt(path_to_points2d, dtype="float64")
@@ -129,7 +129,32 @@ class ParticleVision:
         return x, y
 
     def get_distance(self, x1, y1, x2, y2):
-        return math.sqrt((x1-x2)**2 + (y1-y2)**2)
+        return math.sqrt((x1-x2)**2 + (y1-y2)**2)     
+
+    def intercept_field_boundaries_optimized(self, x, y, line_dir, field):
+        # CHECK IF THETA RESULTS IN 0's
+        dangerous_theta = (line_dir % 9 == 0 and line_dir % 10 == 0)
+        SMALL_VALUE = 1e-4
+
+        # FIND INTERSECTION VECTORS
+        theta = np.deg2rad(line_dir)
+        if not dangerous_theta:
+            v = np.array([
+                (field.x_min-x)/np.cos(theta),
+                (field.x_max-x)/np.cos(theta),
+                (field.y_min-y)/np.sin(theta),
+                (field.y_max-y)/np.sin(theta)
+            ])
+            min_v = np.min(v[v > 0])
+        else:
+            v = np.array([
+                (field.x_min-x)*np.cos(theta),
+                (field.x_max-x)*np.cos(theta),
+                (field.y_min-y)*np.sin(theta),
+                (field.y_max-y)*np.sin(theta)
+            ])
+            min_v = np.min(v[v > SMALL_VALUE])
+        return x+min_v*np.cos(theta), y+min_v*np.sin(theta)
 
     def intercept_field_boundaries(self, x, y, line_dir, field):
         a, b = self.project_line(x, y, line_dir)
@@ -185,10 +210,14 @@ class ParticleVision:
 
     def detect_boundary_points(self, x, y, w, field):
         intercepts = []
+        SMALL_VALUE = 1e-7
         for angle in self.vertical_scan_angles:
             line_dir = angle + w
             line_dir = ((line_dir + 180) % 360) - 180
             interception_x, interception_y = self.intercept_field_boundaries(x, y, line_dir, field)
+            interception_x_optimized, interception_y_optimized = self.intercept_field_boundaries_optimized(x, y, line_dir, field)
+            if abs(interception_x-interception_x_optimized)>SMALL_VALUE or abs(interception_y-interception_y_optimized)>SMALL_VALUE:
+                import pdb;pdb.set_trace()
             interception_x, interception_y = self.convert_to_local(interception_x, interception_y, x, y, w)
             intercepts.append(self.convert_xy_to_polar(interception_x, interception_y))
 

@@ -16,11 +16,12 @@ def get_image_from_frame_nr(path_to_images_folder, frame_nr):
 
 if __name__ == "__main__":
     import os
+    import time
     from rsoccer_gym.Utils.load_localization_data import Read
     cwd = os.getcwd()
 
     is_adaptive = False
-    has_seed = True
+    has_seed = False
     vertical_lines_nr = 1
     if is_adaptive: n_particles = 200
     else: n_particles = 100
@@ -79,6 +80,8 @@ if __name__ == "__main__":
     # Init Odometry
     odometry_particle = Particle(initial_state=initial_position,
                                 movement_deviation=[0, 0, 0])
+    
+    time_log = []
     for frame_nr in data.frames:      
         # update odometry:
         robot_tracker.odometry.update(odometry[env.steps])
@@ -93,8 +96,11 @@ if __name__ == "__main__":
                                                                                   has_goal = has_goal,
                                                                                   goal_bounding_box = goal_bbox)
 
-        # compute particle filter tracking:    
+        # compute particle filter tracking:
+        t0 = time.time()    
         robot_tracker.update(movement, particle_filter_observations, env.steps)
+        dt = time.time() - t0
+        time_log.append(dt)
         odometry_particle.move(movement)
 
         # update visualization:    
@@ -106,4 +112,7 @@ if __name__ == "__main__":
         env.render()
         print(f"Step nr: {env.steps}")
 
-        if frame_nr==data.frames[0]: import pdb;pdb.set_trace()
+        #if frame_nr==data.frames[0]: import pdb;pdb.set_trace()
+    
+    time_log = np.array(time_log)
+    import pdb;pdb.set_trace()
