@@ -110,7 +110,7 @@ if __name__ == "__main__":
                    odometry_particle.state, 
                    time_steps[env.steps])
         env.render()
-        print(f"Step nr: {env.steps}")
+        #print(f"Step nr: {env.steps}")
 
         #if frame_nr==data.frames[0]: import pdb;pdb.set_trace()
     

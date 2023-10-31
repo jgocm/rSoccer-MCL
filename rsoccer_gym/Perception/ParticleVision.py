@@ -215,9 +215,7 @@ class ParticleVision:
             line_dir = angle + w
             line_dir = ((line_dir + 180) % 360) - 180
             interception_x, interception_y = self.intercept_field_boundaries(x, y, line_dir, field)
-            interception_x_optimized, interception_y_optimized = self.intercept_field_boundaries_optimized(x, y, line_dir, field)
-            if abs(interception_x-interception_x_optimized)>SMALL_VALUE or abs(interception_y-interception_y_optimized)>SMALL_VALUE:
-                import pdb;pdb.set_trace()
+            interception_x, interception_y = self.intercept_field_boundaries_optimized(x, y, line_dir, field)
             interception_x, interception_y = self.convert_to_local(interception_x, interception_y, x, y, w)
             intercepts.append(self.convert_xy_to_polar(interception_x, interception_y))
 

@@ -86,8 +86,8 @@ if __name__ == "__main__":
     errors_log = []
 
     # CHOOSE SCENARIO
-    scenario = 'rnd'
-    laps = [1,2,3] #TODO: remover falsos positivos das detecções de gol
+    scenario = 'igs'
+    laps = [2] #TODO: remover falsos positivos das detecções de gol
 
     for lap in laps:
         # LOAD DATASET FROM REAL EXPERIMENTS
@@ -97,48 +97,32 @@ if __name__ == "__main__":
         frames = data.get_frames()
         has_goals = data.get_has_goals(remove_false_positives=True)
         goals = data.get_goals()
+        frames_list = [76, 321]
 
         # LOAD REAL POSITION DATA
         position = data.get_position()
         for i in range(0, len(frames), step):
-
-            # MAKE ROBOT OBSERVATION
-            img = get_image_from_frame_nr(path, frames[i])
-            _, _, robot_boundary_points = get_point_from_vision_process(robot_vision,
-                                                                        img,
-                                                                        has_goals[i],
-                                                                        goals[i])
-            
-            # MAKE PARTICLE OBSERVATION
-            current_state = [position[i][0], position[i][1], np.rad2deg(position[i][2])]
-            particle = Particle(weight=1, initial_state=current_state)
-            if len(robot_boundary_points)>0:
-                particle_vision.set_detection_angles_from_list([robot_boundary_points[0][1]])
-                _, particle_boundary_points = compute_particle_observation(particle, particle_vision, field)
-                data = serialize_observation_data_to_log(lap, 
-                                                        frames[i], 
-                                                        robot_boundary_points,
-                                                        particle_boundary_points)
+            if frames[i] in frames_list:
+    
+                # MAKE ROBOT OBSERVATION
+                img = get_image_from_frame_nr(path, frames[i])
+                _, _, robot_boundary_points = get_point_from_vision_process(robot_vision,
+                                                                            img,
+                                                                            has_goals[i],
+                                                                            goals[i])
                 
-                print(frames[i], robot_boundary_points, particle_boundary_points)        
-                if debug or robot_boundary_points[0][0]>8:
-                    cv2.imshow("BOUNDARY DETECTION", img)
-                    key = cv2.waitKey(-1) & 0xFF
-                    if key == ord('q'):
-                        break
-                    if key == ord('s'):
-                        errors_log.append(data)
-                        cv2.imwrite(cwd+f"/observations_data/{scenario}_0{lap}_{frames[i]}.png", img)
-            
-                else:
-                    errors_log.append(data)
+                # MAKE PARTICLE OBSERVATION
+                current_state = [position[i][0], position[i][1], np.rad2deg(position[i][2])]
+                particle = Particle(weight=1, initial_state=current_state)
+                theta = robot_vision.jetson_cam.selfOrientationFromGoalLine(-0.06428, 107.535)
+                print(f"frame: {frames[i]}: | theta: {np.rad2deg(theta)}, particle orientation: {particle.theta}")
+                if len(robot_boundary_points)>0:
+                    particle_vision.set_detection_angles_from_list([robot_boundary_points[0][1]])
 
-    print("Computation finished! Saving log...")
-
-    if len(errors_log)>1:
-        dir = cwd+f"/observations_data/log.csv"
-        fields = ["QUADRADO NR", "FRAME NR", "EXPECTED DIST", "MEASURED DIST", "ANGLE"]
-        with open(dir, 'w') as f:
-            write = csv.writer(f)
-            write.writerow(fields)
-            write.writerows(errors_log)
+                    #print(frames[i], robot_boundary_points, particle_boundary_points)        
+                    if debug:
+                        cv2.imshow("BOUNDARY DETECTION", img)
+                        key = cv2.waitKey(-1) & 0xFF
+                        if key == ord('q'):
+                            break    
+    

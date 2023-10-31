@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import time
 from rsoccer_gym.Perception.ParticleVision import ParticleVision
 from rsoccer_gym.Tracking.Resampler import Resampler
 from rsoccer_gym.Perception.entities import Field
@@ -359,13 +360,19 @@ class ParticleFilter:
             likelihood_sample = 1.0
             
             # Compute particle observations
+            t0 = 1000*time.time()
             particle_goal, particle_boundary_points = self.compute_observation(particle_state)
             
             # Compute similarity from field boundary points
+            t1 = 1000*time.time()
             likelihood_sample *= self.compute_boundary_points_similarity(self.measurement_weights[0], robot_boundary_points, particle_boundary_points)
 
             # Compute similarity from goal center
+            t2 = 1000*time.time()
             likelihood_sample *= self.compute_goal_similarity(robot_goal, particle_goal)
+            
+            t3 = 1000*time.time()
+            print(f"t1: {t1-t0:.3f}, t2: {t2-t1:.3f}")
 
             # Return importance weight based on all landmarks
             return likelihood_sample
