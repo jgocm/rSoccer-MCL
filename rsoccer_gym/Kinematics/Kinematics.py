@@ -77,6 +77,15 @@ class Robot:
         J2_inv = np.linalg.inv(J2)
         return J2_inv
 
+    def get_inverse_kinematics(self, v):
+        phi = self.get_J2_inv()@self.get_J1()@v
+        return phi
+
+    def get_forward_kinematics(self, phi):
+        v = self.get_J1_inv()@self.get_J2()@phi
+        return v
+        
+
 if __name__ == "__main__":
 
     robot_sim = Robot(number_of_wheels = 4,

@@ -9,7 +9,7 @@ from rsoccer_gym.Entities import Frame, Robot, Ball
 from rsoccer_gym.ssl.ssl_gym_base import SSLBaseEnv
 from rsoccer_gym.Utils import KDTree
 from rsoccer_gym.Kinematics import Kinematics
-
+from rsoccer_gym.Controller import omnidirectional_robot
 
 class SSLGoToBallEnv(SSLBaseEnv):
     """The SSL robot needs to reach the ball 
@@ -56,6 +56,9 @@ class SSLGoToBallEnv(SSLBaseEnv):
         # Set robot kinematics
         self.kinematics = self._make_robots_kinematics(mm_deviation, angle_deviation)
 
+        # Set Omnidirectional Robot for Model Predictive Controller (MPC)
+        self.robot_mpc = omnidirectional_robot.OmnidirectionalRobot(0, 0)
+
         # Limit robot speeds
         self.max_v = 2.5
         self.max_w = 10
@@ -90,6 +93,8 @@ class SSLGoToBallEnv(SSLBaseEnv):
         return robot_kinematics
 
     def _frame_to_observations(self):
+        # Update MPC robot state
+        self.robot_mpc.set_robot_state(robot=self.frame.robots_blue[0])
 
         observation = []
 
@@ -157,7 +162,7 @@ class SSLGoToBallEnv(SSLBaseEnv):
 
     def _calculate_reward_and_done(self):
         reward = 0
-    
+
         for id in range(self.n_robots_blue):
             robot = self.frame.robots_blue[id]
             # Check if robot is out of field
@@ -201,5 +206,7 @@ class SSLGoToBallEnv(SSLBaseEnv):
 
             places.insert(pos)
             pos_frame.robots_yellow[i] = Robot(x=pos[0], y=pos[1], theta=theta())
+
+        self.robot_mpc.set_robot_state(robot=pos_frame.robots_blue[0])
 
         return pos_frame
