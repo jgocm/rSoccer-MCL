@@ -6,24 +6,11 @@ M_TO_MM = 1000
 
 class OmnidirectionalRobot:
 	def __init__(self, intial_x, intial_y, initial_theta):
-		self.x = np.array([
-							intial_x,
-							intial_y,
-							initial_theta
-						  ])
+		self.x = np.array([intial_x, intial_y, initial_theta])
 
-		self.x_dot = np.array([
-							0,
-							0,
-							0
-						  ])
+		self.x_dot = np.array([0, 0, 0])
 
-		self.wheel_speed = np.array([
-										0,
-										0,
-										0,
-										0
-									])
+		self.wheel_speed = np.array([0, 0, 0, 0])
 
 		self.l = 0.081*M_TO_MM
 		self.r = 0.02475*M_TO_MM
@@ -36,24 +23,15 @@ class OmnidirectionalRobot:
 								angle_deviation = 0)
 
 	def set_wheel_velocity(self, w1, w2, w3, w4):
-		self.wheel_speed = np.array([
-										w1,
-										w2,
-										w3, 
-										w4
-									])
+		self.wheel_speed = np.array([w1, w2, w3, w4])
 		self.x_dot = self.forward_kinematics()
 
 	def set_robot_velocity(self, v_x, v_y, v_w):
-		self.x_dot = np.array([v_x,
-							   v_y,
-							   v_w])
+		self.x_dot = np.array([v_x, v_y, v_w])
 		self.wheel_speed = self.inverse_kinematics()
 
 	def set_robot_position(self, x, y, theta):
-		self.x = np.array([x,
-						   y,
-						   theta])
+		self.x = np.array([x, y, theta])
 		
 	def set_robot_state(self, robot):
 		self.set_robot_position(robot.x, robot.y, robot.theta)
@@ -88,8 +66,8 @@ class OmnidirectionalRobot:
 		self.x = A@self.x + B@global_vel
 
 	def update(self, dt):
-		self.wheel_speed[self.wheel_speed>MAX_WHEEL_ROT_SPEED_RAD] = MAX_WHEEL_ROT_SPEED_RAD
 		self.wheel_speed[self.wheel_speed<MIN_WHEEL_ROT_SPEED_RAD] = MIN_WHEEL_ROT_SPEED_RAD
+		self.wheel_speed[self.wheel_speed>MAX_WHEEL_ROT_SPEED_RAD] = MAX_WHEEL_ROT_SPEED_RAD
 		self.x_dot = self.forward_kinematics()
 		self.update_state(dt)
 		self.wheel_speed = self.inverse_kinematics()
@@ -100,17 +78,17 @@ class OmnidirectionalRobot:
 	def rotate_to_global(self, local_vector):
 		theta = np.deg2rad(self.x[2])
 		global_vector = np.array([
-								 np.cos(theta)*local_vector[0] - np.sin(theta)*local_vector[1],
-								 np.sin(theta)*local_vector[0] + np.cos(theta)*local_vector[1],
-								 local_vector[2]
+									np.cos(theta)*local_vector[0] - np.sin(theta)*local_vector[1],
+									np.sin(theta)*local_vector[0] + np.cos(theta)*local_vector[1],
+									local_vector[2]
 								])
 		return global_vector
 
 	def rotate_to_local(self, global_vector):
 		theta = np.deg2rad(self.x[2])
 		local_vector = np.array([
-								 np.cos(theta)*global_vector[0] + np.sin(theta)*global_vector[1],
-								 -np.sin(theta)*global_vector[0] + np.cos(theta)*global_vector[1],
-								 -global_vector[2]
+									np.cos(theta)*global_vector[0] + np.sin(theta)*global_vector[1],
+									-np.sin(theta)*global_vector[0] + np.cos(theta)*global_vector[1],
+									-global_vector[2]
 								])
 		return local_vector
