@@ -4,6 +4,7 @@ from copy import deepcopy
 from scipy.optimize import minimize
 from rsoccer_gym.Controller.parameters import *
 
+#TODO: adjust this class to our implementation for comparisons?
 class PID:
 	def __init__(self, 
 					kp_linear = 0.1, kd_linear = 0.1, ki_linear = 0, 
@@ -71,7 +72,6 @@ class MPC:
 			controller_robot.set_robot_velocity(u_k[0,i], u_k[1,i], 0)
 			controller_robot.update(DELTA_T)
 			x, x_dot = controller_robot.get_state()
-			#import pdb;pdb.set_trace()
 			z_k[:,i] = [x[0], x[1]]
 			cost += np.sum(self.R@(u_k[:2,i]**2))
 			cost += np.sum(self.Q@((desired_state-z_k[:2,i])**2))

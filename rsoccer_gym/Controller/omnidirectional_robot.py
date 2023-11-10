@@ -85,7 +85,6 @@ class OmnidirectionalRobot:
 		
 		global_vel = self.rotate_to_global(vel)
 
-		#import pdb;pdb.set_trace()
 		self.x = A@self.x + B@global_vel
 
 	def update(self, dt):
@@ -106,3 +105,12 @@ class OmnidirectionalRobot:
 								 local_vector[2]
 								])
 		return global_vector
+
+	def rotate_to_local(self, global_vector):
+		theta = np.deg2rad(self.x[2])
+		local_vector = np.array([
+								 np.cos(theta)*global_vector[0] + np.sin(theta)*global_vector[1],
+								 -np.sin(theta)*global_vector[0] + np.cos(theta)*global_vector[1],
+								 -global_vector[2]
+								])
+		return local_vector
