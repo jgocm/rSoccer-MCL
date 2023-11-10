@@ -71,7 +71,8 @@ class MPC:
 			controller_robot.set_robot_velocity(u_k[0,i], u_k[1,i], 0)
 			controller_robot.update(DELTA_T)
 			x, x_dot = controller_robot.get_state()
-			z_k[:,i] = [x[0, 0], x[1, 0]]
+			#import pdb;pdb.set_trace()
+			z_k[:,i] = [x[0], x[1]]
 			cost += np.sum(self.R@(u_k[:2,i]**2))
 			cost += np.sum(self.Q@((desired_state-z_k[:2,i])**2))
 			if i < (self.horizon-1):     

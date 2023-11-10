@@ -57,7 +57,7 @@ class SSLGoToBallEnv(SSLBaseEnv):
         self.kinematics = self._make_robots_kinematics(mm_deviation, angle_deviation)
 
         # Set Omnidirectional Robot for Model Predictive Controller (MPC)
-        self.robot_mpc = omnidirectional_robot.OmnidirectionalRobot(0, 0)
+        self.robot_mpc = omnidirectional_robot.OmnidirectionalRobot(0, 0, 0)
 
         # Limit robot speeds
         self.max_v = 2.5
