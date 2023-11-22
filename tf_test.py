@@ -2,30 +2,58 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
 
-# Transfer function coefficients
-#num = [7794.29437875918, 165.979218425375]
-#den = [1, 534.867143038177, 9686.97075576594, 165.979218425375]
+def simulate_motor(system, control_inputs=[0], time_step=0.025, sampling_time=0.005):
+    """
+    Simulate output of a continuous-time linear system for a sequence of inputs.
 
+    Parameters
+    ----------
+    system : an instance of the LTI class from a scipy transfer function.
+    control_inputs : list or numpy array
+        An input array containing the sequence of inputs that will be sent
+        to the system updated at each time step.
+    time_step : value (float)
+        The time steps at which the inputs to the system are updated.
+    sampling_time : value (float)
+        The sampling time the system will be simulated and its feedbacks will be generated.
+
+    Returns
+    -------
+    t_out : 1D ndarray
+        Time values for the output.
+    y_out : 1D ndarray
+        System response.
+    x_out : ndarray
+        Time evolution of the state vector.    
+    """
+    n_steps = len(control_inputs)
+    t = np.arange(0, n_steps*time_step, sampling_time)
+    X = []
+    for t_k in t:
+        i = int(t_k/time_step)
+        x_k = control_inputs[i]
+        X.append(x_k)
+
+    X = np.array(X)
+    t_out, y_out, x_out = signal.lsim(system, X, t)
+
+    return t_out, y_out, x_out
+
+# Transfer function coefficients
 num = [6023]
 den = [1, 477.4, 6023]
 
 # Create the system
 system = signal.TransferFunction(num, den)
 
-# Time vector (assuming you want to simulate for 1 second)
-time_step = 100*0.025
-sampling_time = 0.002
-t = np.arange(0, time_step, sampling_time)
+# Sequence of control inputs
+control_inputs = [0, 25, 50, 0]
 
-# Define the input signal X here
-# For example, a step input:
-desired_rad_s = 25.3222
-X = desired_rad_s*np.ones_like(t)
-Kp = 0.4
-Ki = 0.001
-
-# Compute the response
-t_out, y_out, _ = signal.lsim(system, X, t, X0=0)
+# Simulate system for sequential inputs
+t_out, y_out, x_out = simulate_motor(system=system, 
+                                     control_inputs=control_inputs,
+                                     time_step=0.025,
+                                     sampling_time=0.002)
 
 # Calculate the total displacement using trapezoidal integration
 total_displacement = np.trapz(y_out, t_out)
@@ -38,46 +66,3 @@ plt.ylabel('Response')
 plt.grid(True)
 plt.show()
 print(total_displacement)
-
-######
-
-def pi_controller(Kp, Ki, setpoint, input_signal, dt):
-    """
-    Simple PI controller.
-    
-    Kp: Proportional gain
-    Ki: Integral gain
-    setpoint: Desired setpoint
-    input_signal: Input signal (e.g., system output)
-    dt: Time step
-    """
-    error = setpoint - input_signal
-    integral = 0
-    output = np.zeros_like(input_signal)
-    
-    for i in range(1, len(input_signal)):
-        integral += error[i] * dt
-        output[i] = Kp * error[i] + Ki * integral
-
-    return output
-
-# Parameters
-Kp = 0.5  # Proportional gain, adjust as needed
-Ki = 0.1  # Integral gain, adjust as needed
-setpoint = 1.0  # Desired setpoint
-dt = 0.002  # Time step
-time = np.arange(0, 0.3, dt)  # Total time for simulation (0.3 s)
-
-# Example input signal (replace this with your actual input)
-input_signal = np.zeros_like(time)
-
-# Apply the PI controller
-output_signal = pi_controller(Kp, Ki, setpoint, input_signal, dt)
-
-# Plot
-plt.plot(time, output_signal)
-plt.title('PI Controller Output')
-plt.xlabel('Time (s)')
-plt.ylabel('Output')
-plt.grid(True)
-plt.show()
