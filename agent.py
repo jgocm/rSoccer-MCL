@@ -44,7 +44,7 @@ def math_modularize(value: float, mod: float) -> float:
     return value
 
 if __name__ ==  "__main__":
-    # Init MPC controller
+    # Init  controller
     controller_mpc = controllers.MPC(horizon = 5)
 
     # Using SSL Single Agent env
@@ -61,6 +61,6 @@ if __name__ ==  "__main__":
         done = False
         while not done:
             # Step using random actions
-            action = get_action_from_desired_global_position(env, 0, 0, 30)
+            action = get_action_from_desired_global_position(env, 1.2, -1.1, 30)
             next_state, reward, done, _ = env.step(action)
             env.render()
