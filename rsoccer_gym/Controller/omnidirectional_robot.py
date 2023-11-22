@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import signal
 from rsoccer_gym.Controller.parameters import *
 from rsoccer_gym.Kinematics.Kinematics import Robot
 
@@ -92,3 +93,86 @@ class OmnidirectionalRobot:
 									-global_vector[2]
 								])
 		return local_vector
+	
+	def simulate_motor(self, system, initial_speed=0, control_inputs=[0], time_step=0.025, sampling_time=0.005):
+		"""
+		Simulate output of a continuous-time linear system for a sequence of inputs.
+
+		Parameters
+		----------
+		system : an instance of the LTI class from a scipy transfer function.
+		control_inputs : list or numpy array
+			An input array containing the sequence of inputs that will be sent
+			to the system updated at each time step.
+		time_step : value (float)
+			The time steps at which the inputs to the system are updated.
+		sampling_time : value (float)
+			The sampling time the system will be simulated and its feedbacks will be generated.
+
+		Returns
+		-------
+		t_out : 1D ndarray
+			Time values for the output.
+		y_out : 1D ndarray
+			System response.
+		x_out : ndarray
+			Time evolution of the state vector.    
+		"""
+		n_steps = len(control_inputs)
+		t = np.arange(0, n_steps*time_step, sampling_time)
+		X = []
+		for t_k in t:
+			i = int(t_k/time_step)
+			x_k = control_inputs[i]
+			X.append(x_k)
+
+		X = np.array(X) - initial_speed
+		t_out, y_out, x_out = signal.lsim(system, X, t)
+
+		return t_out, y_out + initial_speed, x_out
+
+	def wheel_response(self, control_inputs = [0], curren_rad_s = 0):
+		# Transfer function coefficients
+		num = [6023]
+		den = [1, 477.4, 6023]
+
+		# Create the system
+		system = signal.TransferFunction(num, den)
+
+		# Sequence of control inputs
+		control_inputs = np.array([0, 25, 50, 0])
+
+		# Simulate system for sequential inputs
+		t_out, y_out, x_out = self.simulate_motor(system=system,
+												  control_inputs=control_inputs,
+												  time_step=0.025,
+												  sampling_time=0.002)
+
+		# Calculate the total displacement using trapezoidal integration
+		total_displacement = np.trapz(y_out, t_out)
+
+	def predict(self, u_k, horizon, time_step):
+		motors_inputs = []
+		for i in range(horizon):
+			# Assign control inputs
+			x_dot = np.array([u_k[0,i], u_k[1,i], 0])
+
+			# Compute corresponding wheel speeds
+			wheel_speed = self.kinematics.get_inverse_kinematics(x_dot)
+			wheel_speed[wheel_speed<MIN_WHEEL_ROT_SPEED_RAD] = MIN_WHEEL_ROT_SPEED_RAD
+			wheel_speed[wheel_speed>MAX_WHEEL_ROT_SPEED_RAD] = MAX_WHEEL_ROT_SPEED_RAD
+
+			# Split motor inputs
+			motors_inputs.append(wheel_speed)
+
+		# Simulate motor behaviors
+		motors_inputs = np.array(motors_inputs)
+		m0_inputs = motors_inputs[:, 0]
+		m1_inputs = motors_inputs[:, 1]
+		m2_inputs = motors_inputs[:, 2]
+		m3_inputs = motors_inputs[:, 3]
+
+		# Get current states
+		self.wheel_speed = self.inverse_kinematics()
+
+

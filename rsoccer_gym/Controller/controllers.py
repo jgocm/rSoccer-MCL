@@ -68,6 +68,9 @@ class MPC:
 
 		cost = 0.0
 
+		# testing new function for predicting robot movement
+		controller_robot.predict(u_k, self.horizon, 0.025)
+
 		for i in range(self.horizon):
 			controller_robot.set_robot_velocity(u_k[0,i], u_k[1,i], 0)
 			controller_robot.update(DELTA_T)
