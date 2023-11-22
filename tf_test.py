@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
 
-def simulate_motor(system, control_inputs=[0], time_step=0.025, sampling_time=0.005):
+def simulate_motor(system, current_state=0, control_inputs=[0], time_step=0.025, sampling_time=0.005):
     """
     Simulate output of a continuous-time linear system for a sequence of inputs.
 
@@ -34,10 +34,9 @@ def simulate_motor(system, control_inputs=[0], time_step=0.025, sampling_time=0.
         x_k = control_inputs[i]
         X.append(x_k)
 
-    X = np.array(X)
+    X = np.array(X) - current_state
     t_out, y_out, x_out = signal.lsim(system, X, t)
-
-    return t_out, y_out, x_out
+    return t_out, y_out + current_state, x_out
 
 # Transfer function coefficients
 num = [6023]
@@ -47,10 +46,12 @@ den = [1, 477.4, 6023]
 system = signal.TransferFunction(num, den)
 
 # Sequence of control inputs
-control_inputs = [0, 25, 50, 0]
+current_rad_s = 20
+control_inputs = np.array([0, 25, 50, 0])
 
 # Simulate system for sequential inputs
-t_out, y_out, x_out = simulate_motor(system=system, 
+t_out, y_out, x_out = simulate_motor(system=system,
+                                     current_state=current_rad_s,
                                      control_inputs=control_inputs,
                                      time_step=0.025,
                                      sampling_time=0.002)
